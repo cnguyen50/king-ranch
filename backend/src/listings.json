@@ -1,0 +1,11 @@
+[
+    {
+        "id": 1,
+        "title": "Cow",
+        "startingPrice": 100,
+        "currentPrice": 100,
+        "status": "open",
+        "bids": [],
+        "winner": null
+    }
+]
