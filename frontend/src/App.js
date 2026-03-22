@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getListings } from "./services/api";
 import BidList from "./components/BidList";
+import NavBar from "./components/NavBar";
 
 function App() {
   const [listings, setListings] = useState([]);
@@ -15,6 +16,8 @@ function App() {
   };
 
   return (
+    <>
+    <NavBar />
     <div style={{ padding: "20px" }}>
       <h1>King Ranch Auctions</h1>
 
@@ -31,6 +34,7 @@ function App() {
         </div>
       ))}
     </div>
+    </>
   );
 }
 
