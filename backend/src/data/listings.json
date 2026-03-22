@@ -1,11 +1,20 @@
 [
-    {
-        "id": 1,
-        "title": "Cow",
-        "startingPrice": 100,
-        "currentPrice": 100,
-        "status": "open",
-        "bids": [],
-        "winner": null
-    }
+  {
+    "id": 1,
+    "title": "Cow",
+    "startingPrice": 100,
+    "currentPrice": 100,
+    "status": "open",
+    "bids": [],
+    "winner": null
+  },
+  {
+    "id": 2,
+    "title": "Test Listing",
+    "startingPrice": 11111,
+    "currentPrice": 11111,
+    "status": "open",
+    "bids": [],
+    "winner": null
+  }
 ]
