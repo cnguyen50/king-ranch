@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getListings } from "./services/api";
 import BidList from "./components/BidList";
 import NavBar from "./components/NavBar";
+import CreateListing from "./pages/CreateListing";
 
 function App() {
   const [listings, setListings] = useState([]);

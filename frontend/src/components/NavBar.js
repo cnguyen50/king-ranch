@@ -6,15 +6,15 @@ function NavBar() {
         <AppBar position="static">
         <Toolbar>
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            King Ranch
+                King Ranch
             </Typography>
 
             <Button color="inherit" component={Link} to="/">
-            Home
+                Home
             </Button>
 
             <Button color="inherit" component={Link} to="/create">
-            Create Listing
+                Create Listing
             </Button>
         </Toolbar>
         </AppBar>
