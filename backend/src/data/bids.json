@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "listingId": 1,
+    "user": "alice",
+    "amount": 150,
+    "createdAt": "2026-03-23T07:02:54.922Z"
+  },
+  {
+    "id": 2,
+    "listingId": 1,
+    "user": "bob",
+    "amount": 155,
+    "createdAt": "2026-03-23T07:06:42.747Z"
+  },
+  {
+    "id": 3,
+    "listingId": 2,
+    "user": "carol",
+    "amount": 12000,
+    "createdAt": "2026-03-23T07:06:59.166Z"
+  }
+]

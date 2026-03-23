@@ -3,18 +3,20 @@
     "id": 1,
     "title": "Cow",
     "startingPrice": 100,
-    "currentPrice": 100,
+    "currentPrice": 155,
     "status": "open",
-    "bids": [],
+    "createdAt": "2026-03-23T00:00:00.000Z",
+    "endsAt": "2026-03-24T00:00:00.000Z",
     "winner": null
   },
   {
     "id": 2,
     "title": "Test Listing",
     "startingPrice": 11111,
-    "currentPrice": 11111,
+    "currentPrice": 12000,
     "status": "open",
-    "bids": [],
+    "createdAt": "2026-03-23T00:00:00.000Z",
+    "endsAt": "2026-03-24T00:00:00.000Z",
     "winner": null
   }
 ]
