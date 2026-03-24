@@ -7,7 +7,9 @@ import {
     CardActionArea,
     Button,
     TextField,
-    Box
+    Box,
+    Divider,
+    Chip
 } from "@mui/material";
 
 function ListingCard({
@@ -21,38 +23,49 @@ function ListingCard({
 }) {
     return (
         <Card
-        sx={{
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            transition: "0.3s",
-            "&:hover": { transform: "scale(1.02)" }
-        }}
+            sx={{
+                width: "100%",
+                height: "100%",
+                minHeight: 450,
+                display: "flex",
+                flexDirection: "column",
+                transition: "0.3s",
+                "&:hover": { transform: "scale(1.02)" }
+            }}
         >
-        <CardActionArea>
-            {listing.image && (
-                <CardMedia
-                    component="img"
-                    height="180"
-                    image={listing.image}
-                    alt={listing.title}
-                />
-            )}
 
+        <CardActionArea>
+            <CardMedia
+                component="img"
+                image={
+                    listing.image ||
+                    "https://via.placeholder.com/400x200"
+                }
+                alt={listing.title}
+                sx={{
+                    height: 200,
+                    width: "100%",
+                    objectFit: "cover",
+                    borderBottom: "1px solid #eee"
+                }}
+            />
+        </CardActionArea>
+
+        <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
             <CardContent>
                 <Typography variant="h6">{listing.title}</Typography>
+                <Typography variant="h6" sx={{ fontWeight: "bold" }}>Price: ${listing.currentPrice}</Typography>
 
-                <Typography>Price: ${listing.currentPrice}</Typography>
-
-                <Typography sx={{
-                        color: listing.status === "open" ? "green" : "red"
-                    }}
-                >
-                    {listing.status.toUpperCase()}
-                </Typography>
+                <Chip
+                    label={listing.status.toUpperCase()}
+                    color={listing.status === "open" ? "success" : "error"}
+                    variant={listing.status === "open" ? "filled" : "outlined"}
+                    size="small"
+                    sx={{ mt: 1 }}
+                />
 
                 {listing.seller && (
-                    <Typography variant="body2">
+                    <Typography variant="body2" sx={{ mt: 1 }}>
                     Seller: {listing.seller}
                     </Typography>
                 )}
@@ -69,40 +82,41 @@ function ListingCard({
                     </Typography>
                 )}
             </CardContent>
-        </CardActionArea>
 
-        {listing.status === "open" && (
-            <Box sx={{ p: 2 }}>
-            <TextField
-                size="small"
-                type="number"
-                label="Bid Amount"
-                fullWidth
-                value={bidAmount ?? ""}
-                onChange={(e) => setBidAmount(e.target.value)}
-            />
+            {listing.status === "open" && (
+                <Box sx={{ p: 2 }}>
+                    <TextField
+                        size="small"
+                        type="number"
+                        label="Bid Amount"
+                        fullWidth
+                        value={bidAmount ?? ""}
+                        onChange={(e) => setBidAmount(e.target.value)}
+                    />
 
-            <Button
-                variant="contained"
-                fullWidth
-                sx={{ mt: 1 }}
-                onClick={onPlaceBid}
-                disabled={!activeUser}
-            >
-                Place Bid
-            </Button>
+                    <Button
+                        variant="contained"
+                        fullWidth
+                        sx={{ mt: 1 }}
+                        onClick={onPlaceBid}
+                        disabled={!activeUser}
+                    >
+                        Place Bid
+                    </Button>
 
-            <Button
-                variant="outlined"
-                fullWidth
-                sx={{ mt: 1 }}
-                onClick={onClose}
-            >
-                Close Auction
-            </Button>
-            </Box>
-        )}
+                    <Button
+                        variant="outlined"
+                        fullWidth
+                        sx={{ mt: 1 }}
+                        onClick={onClose}
+                    >
+                        Close Auction
+                    </Button>
+                </Box>
+            )}
+        </Box>
 
+        <Divider />
         <Box sx={{ p: 2 }}>
             <BidList bids={listing.bids} />
         </Box>

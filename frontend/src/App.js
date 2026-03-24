@@ -4,6 +4,7 @@ import { Routes, Route } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import CreateListing from "./pages/CreateListing";
 import ListingCard from "./components/ListingCard";
+import { Grid, Box, Typography, Button } from "@mui/material";
 
 function formatTimeRemaining(endsAt) {
   if (!endsAt) return "";
@@ -68,46 +69,73 @@ function App() {
         <Route
           path="/"
           element={
-            <div style={{ padding: "20px" }}>
-              <h1>King Ranch Auctions</h1>
+            <Box sx={{ backgroundColor: "#f5f5f5", minHeight: "100vh" }}>
+              <Box sx={{ py: 3, px: 4 }}>
+                <Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>
+                  King Ranch Auctions
+                </Typography>
 
-              <div style={{ marginBottom: "12px" }}>
-                <label>
-                  Active User:{" "}
-                  <select
-                    value={activeUser}
-                    onChange={(e) => setActiveUser(e.target.value)}
+                <Box sx={{ mb: 2 }}>
+                  <label>
+                    Active User{" "}
+                    <select
+                      value={activeUser}
+                      onChange={(e) => setActiveUser(e.target.value)}
+                    >
+                      {users.map((u) => (
+                        <option key={u.id} value={u.username}>
+                          {u.username}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    sx={{ ml: 2 }}
+                    onClick={loadListings}
                   >
-                    {users.map((u) => (
-                      <option key={u.id} value={u.username}>
-                        {u.username}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button style={{ marginLeft: "10px" }} onClick={loadListings}>
-                  Refresh
-                </button>
-              </div>
+                    Refresh
+                  </Button>
+                </Box>
 
-              {listings.map((listing) => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  activeUser={activeUser}
-                  bidAmount={bidAmounts[listing.id]}
-                  setBidAmount={(value) =>
-                    setBidAmounts((prev) => ({
-                      ...prev,
-                      [listing.id]: value
-                    }))
-                  }
-                  onPlaceBid={() => handlePlaceBid(listing.id)}
-                  onClose={() => handleClose(listing.id)}
-                  formatTimeRemaining={formatTimeRemaining}
-                />
-              ))}
-            </div>
+                <Box sx={{ mt: 4, maxWidth: "1400px", margin: "0 auto" }}>
+                  <Grid
+                    container
+                    spacing={4}
+                    alignItems="stretch"
+                    justifyContent="center"
+                  >
+                    {listings.map((listing) => (
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={4}
+                        key={listing.id}
+                        sx={{ display: "flex" }}
+                      >
+                        <ListingCard
+                          listing={listing}
+                          activeUser={activeUser}
+                          bidAmount={bidAmounts[listing.id]}
+                          setBidAmount={(value) =>
+                            setBidAmounts((prev) => ({
+                              ...prev,
+                              [listing.id]: value
+                            }))
+                          }
+                          onPlaceBid={() => handlePlaceBid(listing.id)}
+                          onClose={() => handleClose(listing.id)}
+                          formatTimeRemaining={formatTimeRemaining}
+                        />
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              </Box>
+            </Box>
           }
         />
 
