@@ -19,6 +19,14 @@ function ListingCard({
         >
         <h2>{listing.title}</h2>
 
+        {listing.image && (
+            <img
+                src={listing.image}
+                alt="listing"
+                style={{ width: "100%", maxHeight: "200px", objectFit: "cover" }}
+            />
+        )}
+
         <p>Current Price: ${listing.currentPrice}</p>
         <p>Status: {listing.status}</p>
 

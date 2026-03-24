@@ -8,6 +8,7 @@ function CreateListing() {
     const [price, setPrice] = useState("");
     const [users, setUsers] = useState([]);
     const [seller, setSeller] = useState("");
+    const [image, setImage] = useState("");
 
     const navigate = useNavigate();
 
@@ -27,10 +28,22 @@ function CreateListing() {
         await createListing({
         title,
         price: Number(price),
-        user: seller || undefined
+        user: seller || undefined,
+        image
         });
 
         navigate("/");
+    };
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+
+        reader.onloadend = () => {
+        setImage(reader.result);
+        };
+
+        if (file) reader.readAsDataURL(file);
     };
 
     return (
@@ -71,6 +84,8 @@ function CreateListing() {
             value={price}
             onChange={(e) => setPrice(e.target.value)}
         />
+
+        <input type="file" accept="image/*" onChange={handleImageUpload} />
 
         <Button
             variant="contained"

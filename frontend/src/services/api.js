@@ -29,6 +29,13 @@ export const createListing = async (data) => {
         },
         body: JSON.stringify(data)
     });
+
+    if (!res.ok) {
+        const text = await res.text(); // handle HTML error (413)
+        console.error("Server error:", text);
+        throw new Error("Failed to create listing");
+    }
+
     return res.json();
 };
 
