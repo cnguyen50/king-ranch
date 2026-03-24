@@ -196,7 +196,8 @@ app.post("/listings", (req, res) => {
         createdAt,
         endsAt,
         seller,
-        winner: null
+        winner: null,
+        image: req.body.image || null
     };
 
     listings.push(newListing);
