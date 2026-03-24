@@ -74,8 +74,11 @@ function getHighestBid(listingId, bids) {
     return listingBids.reduce((max, bid) => (bid.amount > max.amount ? bid : max));
 }
 
-function closeListing(listing, bids) {
+function closeListing(listing, bids, closedAtMs) {
     listing.status = "closed";
+    if (closedAtMs !== undefined && closedAtMs !== null && Number.isFinite(closedAtMs)) {
+        listing.endsAt = toIsoString(closedAtMs);
+    }
     const highest = getHighestBid(listing.id, bids);
     listing.winner = highest ? highest.user : null;
     return listing;
@@ -267,7 +270,7 @@ app.post("/listings/:id/close", (req, res) => {
     const listing = listings.find((l) => l.id === listingId);
     if (!listing) return res.status(404).json({ error: "Not found" });
 
-    closeListing(listing, bids);
+    closeListing(listing, bids, Date.now());
     saveListings(listings);
     res.json(withBids(listing, bids));
 });

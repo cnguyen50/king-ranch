@@ -21,6 +21,11 @@ function ListingCard({
     onClose,
     formatTimeRemaining
 }) {
+    const timeLeftLabel =
+        listing.status === "open"
+            ? formatTimeRemaining(listing.endsAt)
+            : "Closed";
+
     return (
         <Card
             sx={{
@@ -78,7 +83,7 @@ function ListingCard({
 
                 {listing.endsAt && (
                     <Typography variant="body2" color="text.secondary">
-                    Time Left: {formatTimeRemaining(listing.endsAt)}
+                    Time Left: {timeLeftLabel}
                     </Typography>
                 )}
             </CardContent>

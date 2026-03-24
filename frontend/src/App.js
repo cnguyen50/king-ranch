@@ -22,6 +22,12 @@ function formatTimeRemaining(endsAt) {
   return `${seconds}s`;
 }
 
+function formatListingTimeRemaining(listing) {
+  if (!listing) return "";
+  if (listing.status !== "open") return "Closed";
+  return formatTimeRemaining(listing.endsAt);
+}
+
 function App() {
   const [listings, setListings] = useState([]);
   const [users, setUsers] = useState([]);
@@ -129,7 +135,14 @@ function App() {
                           onPlaceBid={() => handlePlaceBid(listing.id)}
                           onClose={() => handleClose(listing.id)}
                           formatTimeRemaining={formatTimeRemaining}
-                        />
+                        >
+                          <p>Status: {listing.status}</p>
+                          {listing.seller ? <p>Seller: {listing.seller}</p> : null}
+                          {listing.winner ? <p>Winner: {listing.winner}</p> : null}
+                          {listing.createdAt ? <p>Created: {new Date(listing.createdAt).toLocaleString()}</p> : null}
+                          {listing.endsAt ? <p>Ends: {new Date(listing.endsAt).toLocaleString()}</p> : null}
+                          {listing.endsAt ? <p>Time Remaining: {formatListingTimeRemaining(listing)}</p> : null}
+                        </ListingCard>
                       </Grid>
                     ))}
                   </Grid>
