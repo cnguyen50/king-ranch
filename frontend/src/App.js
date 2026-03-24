@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { closeAuction, getListings, getUsers, placeBid } from "./services/api";
 import { Routes, Route } from "react-router-dom";
-import BidList from "./components/BidList";
 import NavBar from "./components/NavBar";
 import CreateListing from "./pages/CreateListing";
+import ListingCard from "./components/ListingCard";
 
 function formatTimeRemaining(endsAt) {
   if (!endsAt) return "";
@@ -91,54 +91,21 @@ function App() {
               </div>
 
               {listings.map((listing) => (
-                <div
+                <ListingCard
                   key={listing.id}
-                  style={{
-                    border: "1px solid black",
-                    margin: "10px",
-                    padding: "10px"
-                  }}
-                >
-                  <h2>{listing.title}</h2>
-                  <p>Current Price: ${listing.currentPrice}</p>
-                  <p>Status: {listing.status}</p>
-                  {listing.seller ? <p>Seller: {listing.seller}</p> : null}
-                  {listing.winner ? <p>Winner: {listing.winner}</p> : null}
-                  {listing.createdAt ? <p>Created: {new Date(listing.createdAt).toLocaleString()}</p> : null}
-                  {listing.endsAt ? <p>Ends: {new Date(listing.endsAt).toLocaleString()}</p> : null}
-                  {listing.endsAt ? <p>Time Remaining: {formatTimeRemaining(listing.endsAt)}</p> : null}
-
-                  {listing.status === "open" ? (
-                    <div style={{ marginTop: "10px" }}>
-                      <input
-                        type="number"
-                        placeholder="Bid amount"
-                        value={bidAmounts[listing.id] ?? ""}
-                        onChange={(e) =>
-                          setBidAmounts((prev) => ({
-                            ...prev,
-                            [listing.id]: e.target.value
-                          }))
-                        }
-                      />
-                      <button
-                        style={{ marginLeft: "8px" }}
-                        onClick={() => handlePlaceBid(listing.id)}
-                        disabled={!activeUser}
-                      >
-                        Place Bid
-                      </button>
-                      <button
-                        style={{ marginLeft: "8px" }}
-                        onClick={() => handleClose(listing.id)}
-                      >
-                        Close Auction
-                      </button>
-                    </div>
-                  ) : null}
-
-                  <BidList bids={listing.bids} />
-                </div>
+                  listing={listing}
+                  activeUser={activeUser}
+                  bidAmount={bidAmounts[listing.id]}
+                  setBidAmount={(value) =>
+                    setBidAmounts((prev) => ({
+                      ...prev,
+                      [listing.id]: value
+                    }))
+                  }
+                  onPlaceBid={() => handlePlaceBid(listing.id)}
+                  onClose={() => handleClose(listing.id)}
+                  formatTimeRemaining={formatTimeRemaining}
+                />
               ))}
             </div>
           }
