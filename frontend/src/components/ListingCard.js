@@ -1,4 +1,14 @@
 import BidList from "./BidList";
+import {
+    Card,
+    CardContent,
+    CardMedia,
+    Typography,
+    CardActionArea,
+    Button,
+    TextField,
+    Box
+} from "@mui/material";
 
 function ListingCard({
     listing,
@@ -8,76 +18,95 @@ function ListingCard({
     onPlaceBid,
     onClose,
     formatTimeRemaining
-    }) {
+}) {
     return (
-        <div
-        style={{
-            border: "1px solid black",
-            margin: "10px",
-            padding: "10px"
+        <Card
+        sx={{
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            transition: "0.3s",
+            "&:hover": { transform: "scale(1.02)" }
         }}
         >
-        <h2>{listing.title}</h2>
+        <CardActionArea>
+            {listing.image && (
+                <CardMedia
+                    component="img"
+                    height="180"
+                    image={listing.image}
+                    alt={listing.title}
+                />
+            )}
 
-        {listing.image && (
-            <img
-                src={listing.image}
-                alt="listing"
-                style={{ width: "100%", maxHeight: "200px", objectFit: "cover" }}
-            />
-        )}
+            <CardContent>
+                <Typography variant="h6">{listing.title}</Typography>
 
-        <p>Current Price: ${listing.currentPrice}</p>
-        <p>Status: {listing.status}</p>
+                <Typography>Price: ${listing.currentPrice}</Typography>
 
-        {listing.seller && <p>Seller: {listing.seller}</p>}
-        {listing.winner && <p>Winner: {listing.winner}</p>}
+                <Typography sx={{
+                        color: listing.status === "open" ? "green" : "red"
+                    }}
+                >
+                    {listing.status.toUpperCase()}
+                </Typography>
 
-        {listing.createdAt && (
-            <p>
-            Created: {new Date(listing.createdAt).toLocaleString()}
-            </p>
-        )}
+                {listing.seller && (
+                    <Typography variant="body2">
+                    Seller: {listing.seller}
+                    </Typography>
+                )}
 
-        {listing.endsAt && (
-            <>
-            <p>Ends: {new Date(listing.endsAt).toLocaleString()}</p>
-            <p>
-                Time Remaining:{" "}
-                {formatTimeRemaining(listing.endsAt)}
-            </p>
-            </>
-        )}
+                {listing.winner && (
+                    <Typography variant="body2">
+                    Winner: {listing.winner}
+                    </Typography>
+                )}
+
+                {listing.endsAt && (
+                    <Typography variant="body2" color="text.secondary">
+                    Time Left: {formatTimeRemaining(listing.endsAt)}
+                    </Typography>
+                )}
+            </CardContent>
+        </CardActionArea>
 
         {listing.status === "open" && (
-            <div style={{ marginTop: "10px" }}>
-            <input
+            <Box sx={{ p: 2 }}>
+            <TextField
+                size="small"
                 type="number"
-                placeholder="Bid amount"
+                label="Bid Amount"
+                fullWidth
                 value={bidAmount ?? ""}
                 onChange={(e) => setBidAmount(e.target.value)}
             />
 
-            <button
-                style={{ marginLeft: "8px" }}
+            <Button
+                variant="contained"
+                fullWidth
+                sx={{ mt: 1 }}
                 onClick={onPlaceBid}
                 disabled={!activeUser}
             >
                 Place Bid
-            </button>
+            </Button>
 
-            <button
-                style={{ marginLeft: "8px" }}
+            <Button
+                variant="outlined"
+                fullWidth
+                sx={{ mt: 1 }}
                 onClick={onClose}
             >
                 Close Auction
-            </button>
-            </div>
+            </Button>
+            </Box>
         )}
 
-        {/* Bids list */}
-        <BidList bids={listing.bids} />
-        </div>
+        <Box sx={{ p: 2 }}>
+            <BidList bids={listing.bids} />
+        </Box>
+        </Card>
     );
 }
 
