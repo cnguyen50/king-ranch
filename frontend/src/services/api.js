@@ -1,12 +1,20 @@
 const BASE_URL = "http://localhost:3001";
 
+const fetchJson = async (url, options) => {
+    const res = await fetch(url, {
+        credentials: "include",
+        ...options
+    });
+    return res;
+};
+
 export const getUsers = async () => {
-    const res = await fetch(`${BASE_URL}/users`);
+    const res = await fetchJson(`${BASE_URL}/users`);
     return res.json();
 };
 
 export const createUser = async (data) => {
-    const res = await fetch(`${BASE_URL}/users`, {
+    const res = await fetchJson(`${BASE_URL}/users`, {
         method: "POST",
         headers: {
         "Content-Type": "application/json"
@@ -16,13 +24,30 @@ export const createUser = async (data) => {
     return res.json();
 };
 
+export const getMe = async () => {
+    const res = await fetchJson(`${BASE_URL}/auth/me`);
+    return res.json();
+};
+
+export const getNotifications = async () => {
+    const res = await fetchJson(`${BASE_URL}/notifications`);
+    return res.json();
+};
+
+export const markNotificationRead = async (id) => {
+    const res = await fetchJson(`${BASE_URL}/notifications/${id}/read`, {
+        method: "POST"
+    });
+    return res.json();
+};
+
 export const getListings = async () => {
-    const res = await fetch(`${BASE_URL}/listings`);
+    const res = await fetchJson(`${BASE_URL}/listings`);
     return res.json();
 };
 
 export const createListing = async (data) => {
-    const res = await fetch(`${BASE_URL}/listings`, {
+    const res = await fetchJson(`${BASE_URL}/listings`, {
         method: "POST",
         headers: {
         "Content-Type": "application/json"
@@ -40,7 +65,7 @@ export const createListing = async (data) => {
 };
 
 export const placeBid = async (id, data) => {
-    const res = await fetch(`${BASE_URL}/listings/${id}/bid`, {
+    const res = await fetchJson(`${BASE_URL}/listings/${id}/bid`, {
         method: "POST",
         headers: {
         "Content-Type": "application/json"
@@ -51,7 +76,7 @@ export const placeBid = async (id, data) => {
 };
 
 export const closeAuction = async (id) => {
-    const res = await fetch(`${BASE_URL}/listings/${id}/close`, {
+    const res = await fetchJson(`${BASE_URL}/listings/${id}/close`, {
         method: "POST"
     });
     return res.json();

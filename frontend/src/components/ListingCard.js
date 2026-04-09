@@ -14,13 +14,22 @@ import {
 
 function ListingCard({
     listing,
-    activeUser,
+    isAuthenticated,
     bidAmount,
     setBidAmount,
     onPlaceBid,
     onClose,
     formatTimeRemaining
 }) {
+    const getUserLabel = (user) => {
+        if (!user) return "";
+        if (typeof user === "string") return user;
+        if (typeof user === "object") {
+            return user.displayName || user.email || user.username || user.userId || "";
+        }
+        return "";
+    };
+
     const timeLeftLabel =
         listing.status === "open"
             ? formatTimeRemaining(listing.endsAt)
@@ -69,15 +78,15 @@ function ListingCard({
                     sx={{ mt: 1 }}
                 />
 
-                {listing.seller && (
+                {(listing.creator || listing.seller) && (
                     <Typography variant="body2" sx={{ mt: 1 }}>
-                    Seller: {listing.seller}
+                    Seller: {getUserLabel(listing.creator) || getUserLabel(listing.seller)}
                     </Typography>
                 )}
 
                 {listing.winner && (
                     <Typography variant="body2">
-                    Winner: {listing.winner}
+                    Winner: {getUserLabel(listing.winner)}
                     </Typography>
                 )}
 
@@ -104,7 +113,7 @@ function ListingCard({
                         fullWidth
                         sx={{ mt: 1 }}
                         onClick={onPlaceBid}
-                        disabled={!activeUser}
+                        disabled={!isAuthenticated}
                     >
                         Place Bid
                     </Button>
@@ -114,6 +123,7 @@ function ListingCard({
                         fullWidth
                         sx={{ mt: 1 }}
                         onClick={onClose}
+                        disabled={!isAuthenticated}
                     >
                         Close Auction
                     </Button>

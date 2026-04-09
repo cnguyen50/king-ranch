@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { closeAuction, getListings, getUsers, placeBid } from "./services/api";
+import { closeAuction, getListings, getMe, getNotifications, placeBid } from "./services/api";
 import { Routes, Route } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import CreateListing from "./pages/CreateListing";
 import ListingCard from "./components/ListingCard";
 import { Grid, Box, Typography, Button } from "@mui/material";
+import Notifications from "./pages/Notifications";
 
 function formatTimeRemaining(endsAt) {
   if (!endsAt) return "";
@@ -30,15 +31,26 @@ function formatListingTimeRemaining(listing) {
 
 function App() {
   const [listings, setListings] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [activeUser, setActiveUser] = useState("");
+  const [me, setMe] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [bidAmounts, setBidAmounts] = useState({});
 
   useEffect(() => {
     (async () => {
-      const u = await getUsers();
-      setUsers(u);
-      if (u && u.length > 0) setActiveUser(u[0].username);
+      const auth = await getMe();
+      const authed = Boolean(auth && auth.isAuthenticated);
+      setIsAuthenticated(authed);
+      setMe(auth && auth.user ? auth.user : null);
+
+      if (authed) {
+        const notifs = await getNotifications();
+        if (Array.isArray(notifs)) {
+          setUnreadCount(notifs.filter((n) => !n.read).length);
+        }
+      } else {
+        setUnreadCount(0);
+      }
       await loadListings();
     })();
   }, []);
@@ -50,7 +62,7 @@ function App() {
 
   const handlePlaceBid = async (listingId) => {
     const amount = Number(bidAmounts[listingId]);
-    const res = await placeBid(listingId, { user: activeUser, amount });
+    const res = await placeBid(listingId, { amount });
     if (res && res.error) {
       alert(res.error);
       return;
@@ -69,7 +81,7 @@ function App() {
 
   return (
     <>
-      <NavBar />
+      <NavBar unreadCount={unreadCount} isAuthenticated={isAuthenticated} />
 
       <Routes>
         <Route
@@ -82,26 +94,13 @@ function App() {
                 </Typography>
 
                 <Box sx={{ mb: 2 }}>
-                  <label>
-                    Active User{" "}
-                    <select
-                      value={activeUser}
-                      onChange={(e) => setActiveUser(e.target.value)}
-                    >
-                      {users.map((u) => (
-                        <option key={u.id} value={u.username}>
-                          {u.username}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    {isAuthenticated
+                      ? `Signed in as ${me?.email || me?.username || me?.sub || "user"}`
+                      : "Not signed in"}
+                  </Typography>
 
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    sx={{ ml: 2 }}
-                    onClick={loadListings}
-                  >
+                  <Button variant="outlined" size="small" onClick={loadListings}>
                     Refresh
                   </Button>
                 </Box>
@@ -124,7 +123,7 @@ function App() {
                       >
                         <ListingCard
                           listing={listing}
-                          activeUser={activeUser}
+                          isAuthenticated={isAuthenticated}
                           bidAmount={bidAmounts[listing.id]}
                           setBidAmount={(value) =>
                             setBidAmounts((prev) => ({
@@ -137,8 +136,8 @@ function App() {
                           formatTimeRemaining={formatTimeRemaining}
                         >
                           <p>Status: {listing.status}</p>
-                          {listing.seller ? <p>Seller: {listing.seller}</p> : null}
-                          {listing.winner ? <p>Winner: {listing.winner}</p> : null}
+                          {listing.creator ? <p>Creator: {listing.creator.displayName || listing.creator.email || listing.creator.userId}</p> : null}
+                          {listing.winner ? <p>Winner: {listing.winner.displayName || listing.winner.email || listing.winner.userId}</p> : null}
                           {listing.createdAt ? <p>Created: {new Date(listing.createdAt).toLocaleString()}</p> : null}
                           {listing.endsAt ? <p>Ends: {new Date(listing.endsAt).toLocaleString()}</p> : null}
                           {listing.endsAt ? <p>Time Remaining: {formatListingTimeRemaining(listing)}</p> : null}
@@ -153,6 +152,7 @@ function App() {
         />
 
         <Route path="/create" element={<CreateListing />} />
+        <Route path="/notifications" element={<Notifications />} />
       </Routes>
     </>
   );

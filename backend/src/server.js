@@ -1,15 +1,167 @@
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
+
 const cors = require("cors");
 const express = require("express");
+const session = require("express-session");
+const { Issuer, generators } = require("openid-client");
+const crypto = require("crypto");
 const fs = require("fs");
 const app = express();
 
-app.use(cors())
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || FRONTEND_URL)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+app.use(
+    cors({
+        origin: CORS_ORIGINS,
+        credentials: true
+    })
+);
+
+const SESSION_SECRET = process.env.SESSION_SECRET;
+if (!SESSION_SECRET) {
+    throw new Error("SESSION_SECRET env var is required");
+}
+
+const COOKIE_SECURE = process.env.COOKIE_SECURE === "true";
+
+app.use(
+    session({
+        secret: SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            httpOnly: true,
+            sameSite: "lax",
+            secure: COOKIE_SECURE
+        }
+    })
+);
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-const LISTINGS_PATH = "./src/data/listings.json";
-const BIDS_PATH = "./src/data/bids.json";
-const USERS_PATH = "./src/data/users.json";
+const COGNITO_ISSUER = process.env.COGNITO_ISSUER;
+const COGNITO_CLIENT_ID = process.env.COGNITO_CLIENT_ID;
+const COGNITO_CLIENT_SECRET = process.env.COGNITO_CLIENT_SECRET;
+const AUTH_CALLBACK_URL = process.env.AUTH_CALLBACK_URL || "http://localhost:3001/auth/callback";
+const COGNITO_DOMAIN = process.env.COGNITO_DOMAIN;
+
+if (!COGNITO_ISSUER || !COGNITO_CLIENT_ID || !COGNITO_CLIENT_SECRET || !COGNITO_DOMAIN) {
+    throw new Error(
+        "Missing required Cognito env vars: COGNITO_ISSUER, COGNITO_CLIENT_ID, COGNITO_CLIENT_SECRET, COGNITO_DOMAIN"
+    );
+}
+
+let oidcClientPromise = (async () => {
+    const issuer = await Issuer.discover(COGNITO_ISSUER);
+    return new issuer.Client({
+        client_id: COGNITO_CLIENT_ID,
+        client_secret: COGNITO_CLIENT_SECRET,
+        redirect_uris: [AUTH_CALLBACK_URL],
+        response_types: ["code"]
+    });
+})();
+
+async function getOidcClient() {
+    return oidcClientPromise;
+}
+
+const checkAuth = (req, res, next) => {
+    req.isAuthenticated = Boolean(req.session.userInfo);
+    next();
+};
+
+app.get("/auth/me", checkAuth, (req, res) => {
+    res.json({
+        isAuthenticated: req.isAuthenticated,
+        user: req.session.userInfo || null
+    });
+});
+
+app.get("/auth/login", async (req, res) => {
+    const client = await getOidcClient();
+    const nonce = generators.nonce();
+    const state = generators.state();
+
+    req.session.nonce = nonce;
+    req.session.state = state;
+
+    const authUrl = client.authorizationUrl({
+        scope: "openid email phone",
+        state,
+        nonce,
+        redirect_uri: AUTH_CALLBACK_URL
+    });
+
+    req.session.save(() => {
+        res.redirect(authUrl);
+    });
+});
+
+app.get("/auth/signup", async (req, res) => {
+    const client = await getOidcClient();
+    const nonce = generators.nonce();
+    const state = generators.state();
+
+    req.session.nonce = nonce;
+    req.session.state = state;
+
+    const authUrl = client.authorizationUrl({
+        scope: "openid email phone",
+        state,
+        nonce,
+        redirect_uri: AUTH_CALLBACK_URL,
+        screen_hint: "signup"
+    });
+
+    req.session.save(() => {
+        res.redirect(authUrl);
+    });
+});
+
+app.get("/auth/callback", async (req, res) => {
+    try {
+        const client = await getOidcClient();
+        const params = client.callbackParams(req);
+        const tokenSet = await client.callback(AUTH_CALLBACK_URL, params, {
+            nonce: req.session.nonce,
+            state: req.session.state
+        });
+
+        const userInfo = await client.userinfo(tokenSet.access_token);
+        req.session.userInfo = userInfo;
+
+        req.session.save(() => {
+            res.redirect(FRONTEND_URL);
+        });
+    } catch (err) {
+        console.error("Callback error:", err);
+        res.redirect(FRONTEND_URL);
+    }
+});
+
+app.get("/auth/logout", (req, res) => {
+    const logoutRedirect = process.env.LOGOUT_REDIRECT_URL || FRONTEND_URL;
+
+    req.session.destroy(() => {
+        res.clearCookie("connect.sid");
+        const url = new URL(`https://${COGNITO_DOMAIN}/logout`);
+        url.searchParams.set("client_id", COGNITO_CLIENT_ID);
+        url.searchParams.set("logout_uri", logoutRedirect);
+        res.redirect(url.toString());
+    });
+});
+
+const DATA_DIR = path.join(__dirname, "data");
+const LISTINGS_PATH = path.join(DATA_DIR, "listings.json");
+const BIDS_PATH = path.join(DATA_DIR, "bids.json");
+const USERS_PATH = path.join(DATA_DIR, "users.json");
+const NOTIFICATIONS_PATH = path.join(DATA_DIR, "notifications.json");
 
 function readJson(path, fallbackValue) {
     try {
@@ -22,6 +174,7 @@ function readJson(path, fallbackValue) {
 }
 
 function writeJson(path, value) {
+    fs.mkdirSync(require("path").dirname(path), { recursive: true });
     fs.writeFileSync(path, JSON.stringify(value, null, 2));
 }
 
@@ -49,8 +202,62 @@ function saveUsers(users) {
     writeJson(USERS_PATH, users);
 }
 
+function getNotifications() {
+    return readJson(NOTIFICATIONS_PATH, []);
+}
+
+function saveNotifications(notifications) {
+    writeJson(NOTIFICATIONS_PATH, notifications);
+}
+
 function toIsoString(value) {
     return new Date(value).toISOString();
+}
+
+function getAuthenticatedUser(req) {
+    const userInfo = req.session && req.session.userInfo;
+    if (!userInfo) return null;
+
+    const userId = userInfo.sub || userInfo.username || userInfo.email;
+    if (!userId) return null;
+
+    return {
+        userId: String(userId),
+        email: userInfo.email ? String(userInfo.email) : null,
+        username: userInfo.username ? String(userInfo.username) : null
+    };
+}
+
+function requireAuth(req, res, next) {
+    const user = getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    req.authUser = user;
+    next();
+}
+
+function isAutomationAuthorized(req) {
+    const secret = process.env.AUCTION_CLOSER_SECRET;
+    if (!secret) return false;
+    const provided = req.get("x-auction-closer-secret");
+    return Boolean(provided) && provided === secret;
+}
+
+function getUserDisplayName(user) {
+    if (!user) return "Unknown";
+    return user.email || user.username || user.userId;
+}
+
+function createNotification({ userId, type, listingId, createdAt, message, data }) {
+    return {
+        id: crypto.randomUUID(),
+        userId,
+        type,
+        listingId,
+        createdAt: createdAt || toIsoString(Date.now()),
+        read: false,
+        message,
+        data: data || {}
+    };
 }
 
 function ensureListingTimeFields(listing) {
@@ -80,7 +287,7 @@ function closeListing(listing, bids, closedAtMs) {
         listing.endsAt = toIsoString(closedAtMs);
     }
     const highest = getHighestBid(listing.id, bids);
-    listing.winner = highest ? highest.user : null;
+    listing.winner = highest && highest.bidder ? highest.bidder : null;
     return listing;
 }
 
@@ -139,28 +346,23 @@ function findUserIdentifier(user, users) {
     return null;
 }
 
-// Users
-app.get("/users", (req, res) => {
-    const users = getUsers();
-    res.json(users);
+// Notifications (DynamoDB-friendly shape: userId + createdAt + type + listingId)
+app.get("/notifications", requireAuth, (req, res) => {
+    const notifications = getNotifications();
+    const mine = notifications
+        .filter((n) => n.userId === req.authUser.userId)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    res.json(mine);
 });
 
-app.post("/users", (req, res) => {
-    const users = getUsers();
-    const username = typeof req.body.username === "string" ? req.body.username.trim() : "";
-
-    if (!username) {
-        return res.status(400).json({ error: "username is required" });
-    }
-
-    if (users.some((u) => u.username === username)) {
-        return res.status(400).json({ error: "username already exists" });
-    }
-
-    const newUser = { id: getNextId(users), username };
-    users.push(newUser);
-    saveUsers(users);
-    res.json(newUser);
+app.post("/notifications/:id/read", requireAuth, (req, res) => {
+    const notifications = getNotifications();
+    const n = notifications.find((x) => x.id === req.params.id);
+    if (!n) return res.status(404).json({ error: "Not found" });
+    if (n.userId !== req.authUser.userId) return res.status(403).json({ error: "Forbidden" });
+    n.read = true;
+    saveNotifications(notifications);
+    res.json(n);
 });
 
 // Get all listings
@@ -171,7 +373,7 @@ app.get("/listings", (req, res) => {
 });
 
 // Create listing
-app.post("/listings", (req, res) => {
+app.post("/listings", requireAuth, (req, res) => {
     const listings = getListings();
     const bids = getBids();
     refreshExpiredListings(listings, bids);
@@ -188,18 +390,22 @@ app.post("/listings", (req, res) => {
     const createdAt = toIsoString(now);
     const endsAt = toIsoString(now + 24 * 60 * 60 * 1000);
 
-    const users = getUsers();
-    const seller = findUserIdentifier(req.body.user ?? req.body.userId ?? req.body.seller, users);
+    const creator = {
+        userId: req.authUser.userId,
+        email: req.authUser.email,
+        username: req.authUser.username,
+        displayName: getUserDisplayName(req.authUser)
+    };
 
     const newListing = {
-        id: getNextId(listings),
+        id: crypto.randomUUID(),
         title,
         startingPrice: price,
         currentPrice: price,
         status: "open",
         createdAt,
         endsAt,
-        seller,
+        creator,
         winner: null,
         image: req.body.image || null
     };
@@ -210,12 +416,13 @@ app.post("/listings", (req, res) => {
 });
 
 // Place Bid
-app.post("/listings/:id/bid", (req, res) => {
+app.post("/listings/:id/bid", requireAuth, (req, res) => {
     const listings = getListings();
     const bids = getBids();
+    const notifications = getNotifications();
     refreshExpiredListings(listings, bids);
 
-    const listingId = Number(req.params.id);
+    const listingId = req.params.id;
     const listing = listings.find((l) => l.id === listingId);
     if (!listing) return res.status(404).json({ error: "Not found" });
 
@@ -231,11 +438,8 @@ app.post("/listings/:id/bid", (req, res) => {
         return res.status(400).json({ error: "Auction ended" });
     }
 
-    const users = getUsers();
-    const user = findUserIdentifier(req.body.user ?? req.body.userId, users);
     const amount = Number(req.body.amount);
 
-    if (!user) return res.status(400).json({ error: "Invalid user" });
     if (!Number.isFinite(amount) || amount <= 0) {
         return res.status(400).json({ error: "Invalid amount" });
     }
@@ -243,10 +447,18 @@ app.post("/listings/:id/bid", (req, res) => {
         return res.status(400).json({ error: "Bid too low" });
     }
 
+    const previousHighest = getHighestBid(listing.id, bids);
+    const bidder = {
+        userId: req.authUser.userId,
+        email: req.authUser.email,
+        username: req.authUser.username,
+        displayName: getUserDisplayName(req.authUser)
+    };
+
     const newBid = {
-        id: getNextId(bids),
+        id: crypto.randomUUID(),
         listingId: listing.id,
-        user,
+        bidder,
         amount,
         createdAt: toIsoString(now)
     };
@@ -257,6 +469,22 @@ app.post("/listings/:id/bid", (req, res) => {
     listing.currentPrice = amount;
     saveListings(listings);
 
+    if (previousHighest && previousHighest.bidder && previousHighest.bidder.userId !== bidder.userId) {
+        notifications.push(
+            createNotification({
+                userId: previousHighest.bidder.userId,
+                type: "OUTBID",
+                listingId: listing.id,
+                message: `You were outbid on ${listing.title}. New bid: $${amount}.`,
+                data: {
+                    amount,
+                    listingTitle: listing.title
+                }
+            })
+        );
+        saveNotifications(notifications);
+    }
+
     res.json(withBids(listing, bids));
 });
 
@@ -264,14 +492,63 @@ app.post("/listings/:id/bid", (req, res) => {
 app.post("/listings/:id/close", (req, res) => {
     const listings = getListings();
     const bids = getBids();
+    const notifications = getNotifications();
     refreshExpiredListings(listings, bids);
 
-    const listingId = Number(req.params.id);
+    const listingId = req.params.id;
     const listing = listings.find((l) => l.id === listingId);
     if (!listing) return res.status(404).json({ error: "Not found" });
 
+    const automationOk = isAutomationAuthorized(req);
+    if (!automationOk) {
+        const user = getAuthenticatedUser(req);
+        if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+        const creatorUserId = listing && listing.creator && listing.creator.userId ? String(listing.creator.userId) : null;
+        if (!creatorUserId) {
+            return res.status(403).json({ error: "Only the listing creator can close this auction" });
+        }
+        if (String(user.userId) !== creatorUserId) {
+            return res.status(403).json({ error: "Only the listing creator can close this auction" });
+        }
+    }
+
     closeListing(listing, bids, Date.now());
     saveListings(listings);
+
+    const highest = getHighestBid(listing.id, bids);
+    const allBids = getListingBids(listing.id, bids);
+    const participantUserIds = new Set(
+        allBids
+            .map((b) => (b.bidder ? b.bidder.userId : null))
+            .filter(Boolean)
+    );
+
+    for (const userId of participantUserIds) {
+        if (highest && highest.bidder && userId === highest.bidder.userId) {
+            notifications.push(
+                createNotification({
+                    userId,
+                    type: "WON",
+                    listingId: listing.id,
+                    message: `You won the auction for ${listing.title} at $${highest.amount}.`,
+                    data: { listingTitle: listing.title, amount: highest.amount }
+                })
+            );
+        } else {
+            notifications.push(
+                createNotification({
+                    userId,
+                    type: "CLOSED",
+                    listingId: listing.id,
+                    message: `Auction closed for ${listing.title}.`,
+                    data: { listingTitle: listing.title }
+                })
+            );
+        }
+    }
+
+    if (participantUserIds.size > 0) saveNotifications(notifications);
     res.json(withBids(listing, bids));
 });
 

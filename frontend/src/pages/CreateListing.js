@@ -1,23 +1,14 @@
-import { useEffect, useState } from "react";
-import { TextField, Button, Typography, Box, MenuItem } from "@mui/material";
+import { useState } from "react";
+import { TextField, Button, Typography, Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { createListing, getUsers } from "../services/api";
+import { createListing } from "../services/api";
 
 function CreateListing() {
     const [title, setTitle] = useState("");
     const [price, setPrice] = useState("");
-    const [users, setUsers] = useState([]);
-    const [seller, setSeller] = useState("");
     const [image, setImage] = useState("");
 
     const navigate = useNavigate();
-
-    useEffect(() => {
-        (async () => {
-        const data = await getUsers();
-        setUsers(data);
-        })();
-    }, []);
 
     const handleSubmit = async () => {
         if (!title || !price) {
@@ -25,12 +16,16 @@ function CreateListing() {
         return;
         }
 
+        try {
         await createListing({
-        title,
-        price: Number(price),
-        user: seller || undefined,
-        image
+            title,
+            price: Number(price),
+            image
         });
+        } catch (e) {
+        alert("You must be logged in to create a listing");
+        return;
+        }
 
         navigate("/");
     };
@@ -51,22 +46,6 @@ function CreateListing() {
         <Typography variant="h4" gutterBottom>
             Create Listing
         </Typography>
-
-        <TextField
-            select
-            label="Seller"
-            fullWidth
-            margin="normal"
-            value={seller}
-            onChange={(e) => setSeller(e.target.value)}
-        >
-            <MenuItem value="">(none)</MenuItem>
-            {users.map((u) => (
-            <MenuItem key={u.id} value={u.username}>
-                {u.username}
-            </MenuItem>
-            ))}
-        </TextField>
 
         <TextField
             label="Title"

@@ -1,0 +1,53 @@
+[
+  {
+    "id": "4724928e-9a40-4fcc-bdf6-7fc9aab511dc",
+    "userId": "61bb15e0-a041-70de-0939-72d8c78e1b61",
+    "type": "OUTBID",
+    "listingId": "6c287a42-3c82-417b-a930-c8449b0746ec",
+    "createdAt": "2026-04-09T08:51:49.489Z",
+    "read": false,
+    "message": "You were outbid on A new cow. New bid: $4300.",
+    "data": {
+      "amount": 4300,
+      "listingTitle": "A new cow"
+    }
+  },
+  {
+    "id": "09595a1e-ff74-4230-83d9-86d87e73b97e",
+    "userId": "711b75a0-00d1-706f-a59e-443286e16235",
+    "type": "OUTBID",
+    "listingId": "6c287a42-3c82-417b-a930-c8449b0746ec",
+    "createdAt": "2026-04-09T08:52:11.892Z",
+    "read": false,
+    "message": "You were outbid on A new cow. New bid: $4400.",
+    "data": {
+      "amount": 4400,
+      "listingTitle": "A new cow"
+    }
+  },
+  {
+    "id": "e5920a18-747c-4dc3-88c3-0f7d4d2084b0",
+    "userId": "61bb15e0-a041-70de-0939-72d8c78e1b61",
+    "type": "WON",
+    "listingId": "6c287a42-3c82-417b-a930-c8449b0746ec",
+    "createdAt": "2026-04-09T08:52:36.513Z",
+    "read": false,
+    "message": "You won the auction for A new cow at $4400.",
+    "data": {
+      "listingTitle": "A new cow",
+      "amount": 4400
+    }
+  },
+  {
+    "id": "adfd55d4-9566-4f17-a36c-f9d5f39bc8c7",
+    "userId": "711b75a0-00d1-706f-a59e-443286e16235",
+    "type": "CLOSED",
+    "listingId": "6c287a42-3c82-417b-a930-c8449b0746ec",
+    "createdAt": "2026-04-09T08:52:36.514Z",
+    "read": false,
+    "message": "Auction closed for A new cow.",
+    "data": {
+      "listingTitle": "A new cow"
+    }
+  }
+]

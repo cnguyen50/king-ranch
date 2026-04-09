@@ -33,5 +33,48 @@
     "user": "carol",
     "amount": 1500,
     "createdAt": "2026-03-24T03:19:33.776Z"
+  },
+  {
+    "id": 6,
+    "listingId": 6,
+    "user": "alice",
+    "amount": 900,
+    "createdAt": "2026-03-24T04:48:57.464Z"
+  },
+  {
+    "id": "2f14a2b5-7e62-4141-91ec-1337bc4aeb47",
+    "listingId": "6c287a42-3c82-417b-a930-c8449b0746ec",
+    "bidder": {
+      "userId": "61bb15e0-a041-70de-0939-72d8c78e1b61",
+      "email": "test@test.com",
+      "username": "61bb15e0-a041-70de-0939-72d8c78e1b61",
+      "displayName": "test@test.com"
+    },
+    "amount": 4200,
+    "createdAt": "2026-04-09T08:49:26.128Z"
+  },
+  {
+    "id": "91b561c7-8e85-4e06-99c0-602cf2e09a19",
+    "listingId": "6c287a42-3c82-417b-a930-c8449b0746ec",
+    "bidder": {
+      "userId": "711b75a0-00d1-706f-a59e-443286e16235",
+      "email": "alo@alo.com",
+      "username": "711b75a0-00d1-706f-a59e-443286e16235",
+      "displayName": "alo@alo.com"
+    },
+    "amount": 4300,
+    "createdAt": "2026-04-09T08:51:49.479Z"
+  },
+  {
+    "id": "7251ec4a-046d-4c70-bcbc-38f945843a02",
+    "listingId": "6c287a42-3c82-417b-a930-c8449b0746ec",
+    "bidder": {
+      "userId": "61bb15e0-a041-70de-0939-72d8c78e1b61",
+      "email": "test@test.com",
+      "username": "61bb15e0-a041-70de-0939-72d8c78e1b61",
+      "displayName": "test@test.com"
+    },
+    "amount": 4400,
+    "createdAt": "2026-04-09T08:52:11.884Z"
   }
 ]

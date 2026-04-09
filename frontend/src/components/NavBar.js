@@ -1,7 +1,9 @@
 import { AppBar, Toolbar, Typography, Button } from "@mui/material";
 import { Link } from "react-router-dom";
 
-function NavBar() {
+const AUTH_BASE_URL = "http://localhost:3001";
+
+function NavBar({ unreadCount = 0, isAuthenticated = false }) {
     return (
         <AppBar position="static">
         <Toolbar>
@@ -16,6 +18,41 @@ function NavBar() {
             <Button color="inherit" component={Link} to="/create">
                 Create Listing
             </Button>
+
+            <Button color="inherit" component={Link} to="/notifications">
+                Notifications{unreadCount > 0 ? ` (${unreadCount})` : ""}
+            </Button>
+
+            {isAuthenticated ? (
+                <Button
+                    color="inherit"
+                    onClick={() => {
+                        window.location.href = `${AUTH_BASE_URL}/auth/logout`;
+                    }}
+                >
+                    Logout
+                </Button>
+            ) : (
+                <>
+                    <Button
+                        color="inherit"
+                        onClick={() => {
+                            window.location.href = `${AUTH_BASE_URL}/auth/login`;
+                        }}
+                    >
+                        Login
+                    </Button>
+
+                    <Button
+                        color="inherit"
+                        onClick={() => {
+                            window.location.href = `${AUTH_BASE_URL}/auth/signup`;
+                        }}
+                    >
+                        Signup
+                    </Button>
+                </>
+            )}
         </Toolbar>
         </AppBar>
     );
