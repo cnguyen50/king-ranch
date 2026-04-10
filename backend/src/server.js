@@ -5,8 +5,15 @@ const cors = require("cors");
 const express = require("express");
 const session = require("express-session");
 const { Issuer, generators } = require("openid-client");
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
+    DynamoDBDocumentClient,
+    ScanCommand,
+    PutCommand,
+    QueryCommand,
+    UpdateCommand
+} = require("@aws-sdk/lib-dynamodb");
 const crypto = require("crypto");
-const fs = require("fs");
 const app = express();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
@@ -51,11 +58,29 @@ const COGNITO_CLIENT_SECRET = process.env.COGNITO_CLIENT_SECRET;
 const AUTH_CALLBACK_URL = process.env.AUTH_CALLBACK_URL || "http://localhost:3001/auth/callback";
 const COGNITO_DOMAIN = process.env.COGNITO_DOMAIN;
 
+const AWS_REGION = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION;
+const DDB_LISTINGS_TABLE = process.env.DDB_LISTINGS_TABLE;
+const DDB_BIDS_TABLE = process.env.DDB_BIDS_TABLE;
+const DDB_NOTIFICATIONS_TABLE = process.env.DDB_NOTIFICATIONS_TABLE;
+
 if (!COGNITO_ISSUER || !COGNITO_CLIENT_ID || !COGNITO_CLIENT_SECRET || !COGNITO_DOMAIN) {
     throw new Error(
         "Missing required Cognito env vars: COGNITO_ISSUER, COGNITO_CLIENT_ID, COGNITO_CLIENT_SECRET, COGNITO_DOMAIN"
     );
 }
+
+if (!AWS_REGION || !DDB_LISTINGS_TABLE || !DDB_BIDS_TABLE || !DDB_NOTIFICATIONS_TABLE) {
+    throw new Error(
+        "Missing required DynamoDB env vars: AWS_REGION, DDB_LISTINGS_TABLE, DDB_BIDS_TABLE, DDB_NOTIFICATIONS_TABLE"
+    );
+}
+
+const ddbDoc = DynamoDBDocumentClient.from(
+    new DynamoDBClient({ region: AWS_REGION }),
+    {
+        marshallOptions: { removeUndefinedValues: true }
+    }
+);
 
 let oidcClientPromise = (async () => {
     const issuer = await Issuer.discover(COGNITO_ISSUER);
@@ -157,57 +182,96 @@ app.get("/auth/logout", (req, res) => {
     });
 });
 
-const DATA_DIR = path.join(__dirname, "data");
-const LISTINGS_PATH = path.join(DATA_DIR, "listings.json");
-const BIDS_PATH = path.join(DATA_DIR, "bids.json");
-const USERS_PATH = path.join(DATA_DIR, "users.json");
-const NOTIFICATIONS_PATH = path.join(DATA_DIR, "notifications.json");
-
-function readJson(path, fallbackValue) {
-    try {
-        const data = fs.readFileSync(path);
-        return JSON.parse(data);
-    } catch (err) {
-        if (err && err.code === "ENOENT") return fallbackValue;
-        throw err;
-    }
+async function ddbListListings() {
+    const res = await ddbDoc.send(
+        new ScanCommand({
+            TableName: DDB_LISTINGS_TABLE
+        })
+    );
+    return Array.isArray(res.Items) ? res.Items : [];
 }
 
-function writeJson(path, value) {
-    fs.mkdirSync(require("path").dirname(path), { recursive: true });
-    fs.writeFileSync(path, JSON.stringify(value, null, 2));
+async function ddbPutListing(listing) {
+    await ddbDoc.send(
+        new PutCommand({
+            TableName: DDB_LISTINGS_TABLE,
+            Item: {
+                ...listing,
+                listingId: listing.id
+            }
+        })
+    );
 }
 
-function getListings() {
-    return readJson(LISTINGS_PATH, []);
+async function ddbQueryBids(listingId) {
+    const res = await ddbDoc.send(
+        new QueryCommand({
+            TableName: DDB_BIDS_TABLE,
+            KeyConditionExpression: "listingId = :listingId",
+            ExpressionAttributeValues: {
+                ":listingId": listingId
+            },
+            ScanIndexForward: true
+        })
+    );
+    return Array.isArray(res.Items) ? res.Items : [];
 }
 
-function saveListings(listings) {
-    writeJson(LISTINGS_PATH, listings);
+async function ddbPutBid(bid) {
+    await ddbDoc.send(
+        new PutCommand({
+            TableName: DDB_BIDS_TABLE,
+            Item: bid
+        })
+    );
 }
 
-function getBids() {
-    return readJson(BIDS_PATH, []);
+async function ddbQueryNotifications(userId) {
+    const res = await ddbDoc.send(
+        new QueryCommand({
+            TableName: DDB_NOTIFICATIONS_TABLE,
+            KeyConditionExpression: "userId = :userId",
+            ExpressionAttributeValues: {
+                ":userId": userId
+            },
+            ScanIndexForward: false
+        })
+    );
+    return Array.isArray(res.Items) ? res.Items : [];
 }
 
-function saveBids(bids) {
-    writeJson(BIDS_PATH, bids);
+async function ddbPutNotification(notification) {
+    const createdAtId = `${notification.createdAt}#${notification.id}`;
+    await ddbDoc.send(
+        new PutCommand({
+            TableName: DDB_NOTIFICATIONS_TABLE,
+            Item: {
+                ...notification,
+                createdAtId
+            }
+        })
+    );
 }
 
-function getUsers() {
-    return readJson(USERS_PATH, []);
-}
-
-function saveUsers(users) {
-    writeJson(USERS_PATH, users);
-}
-
-function getNotifications() {
-    return readJson(NOTIFICATIONS_PATH, []);
-}
-
-function saveNotifications(notifications) {
-    writeJson(NOTIFICATIONS_PATH, notifications);
+async function ddbMarkNotificationRead({ userId, createdAtId }) {
+    const res = await ddbDoc.send(
+        new UpdateCommand({
+            TableName: DDB_NOTIFICATIONS_TABLE,
+            Key: {
+                userId,
+                createdAtId
+            },
+            UpdateExpression: "SET #read = :true",
+            ExpressionAttributeNames: {
+                "#read": "read"
+            },
+            ExpressionAttributeValues: {
+                ":true": true
+            },
+            ReturnValues: "ALL_NEW"
+        })
+    );
+    return res.Attributes;
 }
 
 function toIsoString(value) {
@@ -281,6 +345,13 @@ function getHighestBid(listingId, bids) {
     return listingBids.reduce((max, bid) => (bid.amount > max.amount ? bid : max));
 }
 
+function withBids(listing, bids) {
+    return {
+        ...listing,
+        bids: getListingBids(listing.id, bids)
+    };
+}
+
 function closeListing(listing, bids, closedAtMs) {
     listing.status = "closed";
     if (closedAtMs !== undefined && closedAtMs !== null && Number.isFinite(closedAtMs)) {
@@ -291,93 +362,56 @@ function closeListing(listing, bids, closedAtMs) {
     return listing;
 }
 
-function refreshExpiredListings(listings, bids) {
-    const now = Date.now();
-    let changed = false;
-
-    for (const listing of listings) {
-        ensureListingTimeFields(listing);
-        const endsAtMs = Date.parse(listing.endsAt);
-
-        if (listing.status === "open" && Number.isFinite(endsAtMs) && now >= endsAtMs) {
-            closeListing(listing, bids);
-            changed = true;
-        }
-    }
-
-    if (changed) saveListings(listings);
-    return listings;
-}
-
-function withBids(listing, bids) {
-    return {
-        ...listing,
-        bids: getListingBids(listing.id, bids)
-    };
-}
-
-function getNextId(items) {
-    const maxId = items.reduce((max, item) => (item.id > max ? item.id : max), 0);
-    return maxId + 1;
-}
-
-function findUserIdentifier(user, users) {
-    if (user === undefined || user === null || user === "") return null;
-
-    if (typeof user === "number") {
-        const found = users.find((u) => u.id === user);
-        return found ? found.username : null;
-    }
-
-    if (typeof user === "string") {
-        const trimmed = user.trim();
-        if (!trimmed) return null;
-
-        const asNumber = Number(trimmed);
-        if (Number.isFinite(asNumber)) {
-            const found = users.find((u) => u.id === asNumber);
-            if (found) return found.username;
-        }
-
-        const foundByUsername = users.find((u) => u.username === trimmed);
-        return foundByUsername ? foundByUsername.username : null;
-    }
-
-    return null;
-}
-
 // Notifications (DynamoDB-friendly shape: userId + createdAt + type + listingId)
-app.get("/notifications", requireAuth, (req, res) => {
-    const notifications = getNotifications();
-    const mine = notifications
-        .filter((n) => n.userId === req.authUser.userId)
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+app.get("/notifications", requireAuth, async (req, res) => {
+    const mine = await ddbQueryNotifications(req.authUser.userId);
     res.json(mine);
 });
 
-app.post("/notifications/:id/read", requireAuth, (req, res) => {
-    const notifications = getNotifications();
-    const n = notifications.find((x) => x.id === req.params.id);
+app.post("/notifications/:id/read", requireAuth, async (req, res) => {
+    const mine = await ddbQueryNotifications(req.authUser.userId);
+    const n = mine.find((x) => x && x.id === req.params.id);
     if (!n) return res.status(404).json({ error: "Not found" });
-    if (n.userId !== req.authUser.userId) return res.status(403).json({ error: "Forbidden" });
-    n.read = true;
-    saveNotifications(notifications);
-    res.json(n);
+    if (!n.createdAtId) {
+        const createdAtId = `${n.createdAt}#${n.id}`;
+        n.createdAtId = createdAtId;
+    }
+    const updated = await ddbMarkNotificationRead({
+        userId: req.authUser.userId,
+        createdAtId: n.createdAtId
+    });
+    res.json(updated);
 });
 
 // Get all listings
-app.get("/listings", (req, res) => {
-    const bids = getBids();
-    const listings = refreshExpiredListings(getListings(), bids);
-    res.json(listings.map((l) => withBids(l, bids)));
+app.get("/listings", async (req, res) => {
+    const listings = await ddbListListings();
+
+    const enriched = [];
+
+    for (const listing of listings) {
+        const normalized = {
+            ...listing,
+            id: listing.id || listing.listingId
+        };
+
+        const bids = await ddbQueryBids(normalized.id);
+        ensureListingTimeFields(normalized);
+
+        const endsAtMs = Date.parse(normalized.endsAt);
+        if (normalized.status === "open" && Number.isFinite(endsAtMs) && Date.now() >= endsAtMs) {
+            closeListing(normalized, bids);
+            await ddbPutListing(normalized);
+        }
+
+        enriched.push(withBids(normalized, bids));
+    }
+
+    res.json(enriched);
 });
 
 // Create listing
-app.post("/listings", requireAuth, (req, res) => {
-    const listings = getListings();
-    const bids = getBids();
-    refreshExpiredListings(listings, bids);
-
+app.post("/listings", requireAuth, async (req, res) => {
     const title = typeof req.body.title === "string" ? req.body.title.trim() : "";
     const price = Number(req.body.price);
 
@@ -410,21 +444,20 @@ app.post("/listings", requireAuth, (req, res) => {
         image: req.body.image || null
     };
 
-    listings.push(newListing);
-    saveListings(listings);
-    res.json(withBids(newListing, bids));
+    await ddbPutListing(newListing);
+    res.json(withBids(newListing, []));
 });
 
 // Place Bid
-app.post("/listings/:id/bid", requireAuth, (req, res) => {
-    const listings = getListings();
-    const bids = getBids();
-    const notifications = getNotifications();
-    refreshExpiredListings(listings, bids);
-
+app.post("/listings/:id/bid", requireAuth, async (req, res) => {
     const listingId = req.params.id;
-    const listing = listings.find((l) => l.id === listingId);
+    const listings = await ddbListListings();
+    const listing = listings
+        .map((l) => ({ ...l, id: l.id || l.listingId }))
+        .find((l) => l.id === listingId);
     if (!listing) return res.status(404).json({ error: "Not found" });
+
+    const bids = await ddbQueryBids(listing.id);
 
     ensureListingTimeFields(listing);
 
@@ -434,7 +467,7 @@ app.post("/listings/:id/bid", requireAuth, (req, res) => {
     }
     if (now >= Date.parse(listing.endsAt)) {
         closeListing(listing, bids);
-        saveListings(listings);
+        await ddbPutListing(listing);
         return res.status(400).json({ error: "Auction ended" });
     }
 
@@ -463,14 +496,16 @@ app.post("/listings/:id/bid", requireAuth, (req, res) => {
         createdAt: toIsoString(now)
     };
 
-    bids.push(newBid);
-    saveBids(bids);
+    await ddbPutBid({ ...newBid, bidId: newBid.id });
+
+    const updatedBids = [...bids, newBid];
 
     listing.currentPrice = amount;
-    saveListings(listings);
+
+    await ddbPutListing(listing);
 
     if (previousHighest && previousHighest.bidder && previousHighest.bidder.userId !== bidder.userId) {
-        notifications.push(
+        await ddbPutNotification(
             createNotification({
                 userId: previousHighest.bidder.userId,
                 type: "OUTBID",
@@ -482,22 +517,21 @@ app.post("/listings/:id/bid", requireAuth, (req, res) => {
                 }
             })
         );
-        saveNotifications(notifications);
     }
 
-    res.json(withBids(listing, bids));
+    res.json(withBids(listing, updatedBids));
 });
 
 // Close auction
-app.post("/listings/:id/close", (req, res) => {
-    const listings = getListings();
-    const bids = getBids();
-    const notifications = getNotifications();
-    refreshExpiredListings(listings, bids);
-
+app.post("/listings/:id/close", async (req, res) => {
     const listingId = req.params.id;
-    const listing = listings.find((l) => l.id === listingId);
+    const listings = await ddbListListings();
+    const listing = listings
+        .map((l) => ({ ...l, id: l.id || l.listingId }))
+        .find((l) => l.id === listingId);
     if (!listing) return res.status(404).json({ error: "Not found" });
+
+    const bids = await ddbQueryBids(listing.id);
 
     const automationOk = isAutomationAuthorized(req);
     if (!automationOk) {
@@ -514,7 +548,7 @@ app.post("/listings/:id/close", (req, res) => {
     }
 
     closeListing(listing, bids, Date.now());
-    saveListings(listings);
+    await ddbPutListing(listing);
 
     const highest = getHighestBid(listing.id, bids);
     const allBids = getListingBids(listing.id, bids);
@@ -526,7 +560,7 @@ app.post("/listings/:id/close", (req, res) => {
 
     for (const userId of participantUserIds) {
         if (highest && highest.bidder && userId === highest.bidder.userId) {
-            notifications.push(
+            await ddbPutNotification(
                 createNotification({
                     userId,
                     type: "WON",
@@ -536,7 +570,7 @@ app.post("/listings/:id/close", (req, res) => {
                 })
             );
         } else {
-            notifications.push(
+            await ddbPutNotification(
                 createNotification({
                     userId,
                     type: "CLOSED",
@@ -548,7 +582,6 @@ app.post("/listings/:id/close", (req, res) => {
         }
     }
 
-    if (participantUserIds.size > 0) saveNotifications(notifications);
     res.json(withBids(listing, bids));
 });
 

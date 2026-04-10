@@ -23,7 +23,7 @@ function CreateListing() {
             image
         });
         } catch (e) {
-        alert("You must be logged in to create a listing");
+        alert(e && e.message ? e.message : "Failed to create listing");
         return;
         }
 

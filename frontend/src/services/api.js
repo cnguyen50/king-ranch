@@ -8,6 +8,21 @@ const fetchJson = async (url, options) => {
     return res;
 };
 
+const readErrorMessage = async (res) => {
+    try {
+        const contentType = res.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+            const data = await res.json();
+            if (data && typeof data.error === "string") return data.error;
+            return JSON.stringify(data);
+        }
+        const text = await res.text();
+        return text || `Request failed (${res.status})`;
+    } catch {
+        return `Request failed (${res.status})`;
+    }
+};
+
 export const getUsers = async () => {
     const res = await fetchJson(`${BASE_URL}/users`);
     return res.json();
@@ -56,9 +71,9 @@ export const createListing = async (data) => {
     });
 
     if (!res.ok) {
-        const text = await res.text(); // handle HTML error (413)
-        console.error("Server error:", text);
-        throw new Error("Failed to create listing");
+        const msg = await readErrorMessage(res);
+        const prefix = res.status === 401 ? "Unauthorized" : `Error ${res.status}`;
+        throw new Error(`${prefix}: ${msg}`);
     }
 
     return res.json();
