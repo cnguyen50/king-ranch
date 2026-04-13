@@ -32,7 +32,7 @@ const timeAgo = (date) => {
   return `${Math.floor(diff / 86400)}d ago`;
 };
 
-function Notifications() {
+function Notifications({ onNotificationsUpdate }) {
   const [notifications, setNotifications] = useState([]);
 
   const load = async () => {
@@ -43,6 +43,12 @@ function Notifications() {
         return;
       }
       setNotifications(data);
+
+      if (onNotificationsUpdate) {
+        const unread = data.filter((n) => !n.read).length;
+        onNotificationsUpdate(unread);
+      }
+
     } catch {
       setNotifications([]);
     }
@@ -94,14 +100,12 @@ function Notifications() {
               }
             }}
           >
-            {/* LEFT SIDE */}
             <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
               <Typography fontSize="1.8rem">
                 {getIcon(n.type)}
               </Typography>
 
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                {/* 🔴 UNREAD DOT */}
                 {!n.read && (
                   <Box
                     sx={{
@@ -126,7 +130,6 @@ function Notifications() {
               </Box>
             </Box>
 
-            {/* RIGHT SIDE */}
             {!n.read && (
               <Button
                 size="small"

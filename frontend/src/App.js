@@ -159,7 +159,7 @@ function App() {
         />
 
         <Route path="/create" element={<CreateListing />} />
-        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/notifications" element={<Notifications onNotificationsUpdate={setUnreadCount} />} />
       </Routes>
     </>
   );
