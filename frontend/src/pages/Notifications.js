@@ -42,7 +42,13 @@ function Notifications({ onNotificationsUpdate }) {
         setNotifications([]);
         return;
       }
-      setNotifications(data);
+
+      setNotifications((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(data)) {
+          return data;
+        }
+        return prev;
+      });
 
       if (onNotificationsUpdate) {
         const unread = data.filter((n) => !n.read).length;
@@ -56,11 +62,26 @@ function Notifications({ onNotificationsUpdate }) {
 
   useEffect(() => {
     load();
+
+    const interval = setInterval(() => {
+      load();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const markRead = async (id) => {
     await markNotificationRead(id);
-    await load();
+
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.id === id ? { ...n, read: true } : n
+      )
+    );
+
+    if (onNotificationsUpdate) {
+      onNotificationsUpdate((prev) => Math.max(prev - 1, 0));
+    }
   };
 
   return (
