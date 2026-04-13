@@ -98,7 +98,7 @@ function Notifications({ onNotificationsUpdate }) {
 
       {notifications.length === 0 ? (
         <Typography align="center" sx={{ mt: 5 }} color="text.secondary">
-          You're all caught up 🎉
+          You're all caught up
         </Typography>
       ) : (
         notifications.map((n) => (
