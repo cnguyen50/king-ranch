@@ -10,7 +10,7 @@ import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import AgricultureIcon from "@mui/icons-material/Agriculture";
 
-const AUTH_BASE_URL = "http://localhost:3001";
+const AUTH_BASE_URL = "";
 
 function NavBar({ unreadCount = 0, isAuthenticated = false, userEmail = "" }) {
     return (
