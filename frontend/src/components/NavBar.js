@@ -8,6 +8,7 @@ import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import AgricultureIcon from "@mui/icons-material/Agriculture";
 
 const AUTH_BASE_URL = "http://localhost:3001";
 
@@ -15,9 +16,21 @@ function NavBar({ unreadCount = 0, isAuthenticated = false, userEmail = "" }) {
     return (
         <AppBar position="static">
         <Toolbar>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                King Ranch
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}></Box>
+                <AgricultureIcon sx={{ fontSize: 30 }} />
+                <Typography 
+                    variant="h6"
+                    sx={{
+                        flexGrow: 1,
+                        fontFamily: "'Rye', serif",
+                        letterSpacing: 1.5,
+                        fontWeight: "bold",
+                        fontSize: "1.5rem"
+                    }}
+                >
+                    King Ranch
+                </Typography>
+            <Box/>
 
             <Button
                 color="inherit"
@@ -33,6 +46,7 @@ function NavBar({ unreadCount = 0, isAuthenticated = false, userEmail = "" }) {
             >
                 <HomeIcon fontSize="medium" />
             </Button>
+
 
             {isAuthenticated && (
                 <>
