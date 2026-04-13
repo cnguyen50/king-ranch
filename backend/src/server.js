@@ -183,12 +183,25 @@ app.get("/auth/logout", (req, res) => {
 });
 
 async function ddbListListings() {
-    const res = await ddbDoc.send(
-        new ScanCommand({
-            TableName: DDB_LISTINGS_TABLE
-        })
-    );
-    return Array.isArray(res.Items) ? res.Items : [];
+    const items = [];
+    let lastEvaluatedKey;
+
+    do {
+        const res = await ddbDoc.send(
+            new ScanCommand({
+                TableName: DDB_LISTINGS_TABLE,
+                ExclusiveStartKey: lastEvaluatedKey
+            })
+        );
+
+        if (Array.isArray(res.Items) && res.Items.length > 0) {
+            items.push(...res.Items);
+        }
+
+        lastEvaluatedKey = res.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    return items;
 }
 
 async function ddbPutListing(listing) {
@@ -401,7 +414,14 @@ app.get("/listings", async (req, res) => {
         const endsAtMs = Date.parse(normalized.endsAt);
         if (normalized.status === "open" && Number.isFinite(endsAtMs) && Date.now() >= endsAtMs) {
             closeListing(normalized, bids);
-            await ddbPutListing(normalized);
+            try {
+                await ddbPutListing(normalized);
+            } catch (err) {
+                console.error("Failed to persist auto-closed listing", {
+                    listingId: normalized.id,
+                    message: err && err.message ? err.message : String(err)
+                });
+            }
         }
 
         enriched.push(withBids(normalized, bids));
