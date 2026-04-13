@@ -5,11 +5,11 @@ import { getNotifications, markNotificationRead } from "../services/api";
 const getColor = (type) => {
   switch (type) {
     case "WON":
-      return "#4caf50";
+      return "success.main";
     case "OUTBID":
-      return "#f44336";
+      return "error.main";
     default:
-      return "#2196f3";
+      return "primary.main";
   }
 };
 
@@ -54,7 +54,6 @@ function Notifications({ onNotificationsUpdate }) {
         const unread = data.filter((n) => !n.read).length;
         onNotificationsUpdate(unread);
       }
-
     } catch {
       setNotifications([]);
     }
@@ -62,11 +61,7 @@ function Notifications({ onNotificationsUpdate }) {
 
   useEffect(() => {
     load();
-
-    const interval = setInterval(() => {
-      load();
-    }, 5000);
-
+    const interval = setInterval(load, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -85,84 +80,131 @@ function Notifications({ onNotificationsUpdate }) {
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: 900, margin: "0 auto" }}>
-      <Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>
-        Notifications
-      </Typography>
-
-      <Button variant="outlined" size="small" onClick={load}>
-        Refresh
-      </Button>
-
-      <Divider sx={{ my: 2 }} />
-
-      {notifications.length === 0 ? (
-        <Typography align="center" sx={{ mt: 5 }} color="text.secondary">
-          You're all caught up
+    <Box
+      sx={{
+        minHeight: "100vh",
+        backgroundColor: "background.default",
+        py: 4
+      }}
+    >
+      <Box sx={{ maxWidth: 900, mx: "auto", px: 2 }}>
+        
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: "bold",
+            mb: 2,
+            textAlign: "center",
+            color: "primary.main"
+          }}
+        >
+          Notifications
         </Typography>
-      ) : (
-        notifications.map((n) => (
-          <Box
-            key={n.id}
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              p: 2,
-              mb: 2,
-              borderRadius: 2,
-              backgroundColor: n.read ? "#f5f5f5" : "#fff",
-              borderLeft: `6px solid ${getColor(n.type)}`,
-              boxShadow: 2,
-              transition: "all 0.2s ease",
-              "&:hover": {
-                transform: "translateY(-2px)",
-                boxShadow: 4
-              }
-            }}
-          >
-            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-              <Typography fontSize="1.8rem">
-                {getIcon(n.type)}
-              </Typography>
 
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                {!n.read && (
-                  <Box
-                    sx={{
-                      width: 8,
-                      height: 8,
-                      bgcolor: "#f44336",
-                      borderRadius: "50%",
-                      boxShadow: "0 0 6px rgba(244,67,54,0.6)"
-                    }}
-                  />
-                )}
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={load}
+          sx={{
+            display: "block",
+            mx: "auto",
+            mb: 2,
+            borderColor: "primary.main",
+            color: "primary.main",
+            "&:hover": {
+              borderColor: "primary.dark",
+              backgroundColor: "rgba(90,62,43,0.05)"
+            }
+          }}
+        >
+          Refresh
+        </Button>
 
-                <Box>
-                  <Typography sx={{ fontWeight: n.read ? "normal" : "bold" }}>
-                    {n.message}
-                  </Typography>
+        <Divider sx={{ mb: 3 }} />
 
-                  <Typography variant="caption" color="text.secondary">
-                    {n.createdAt ? timeAgo(n.createdAt) : ""}
-                  </Typography>
+        {notifications.length === 0 ? (
+          <Typography align="center" sx={{ mt: 5 }} color="text.secondary">
+            You're all caught up
+          </Typography>
+        ) : (
+          notifications.map((n) => (
+            <Box
+              key={n.id}
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                p: 2,
+                mb: 2,
+                borderRadius: 3,
+                backgroundColor: "#fff",
+                borderLeft: `6px solid`,
+                borderColor: getColor(n.type),
+                boxShadow: 3,
+                transition: "all 0.2s ease",
+                opacity: n.read ? 0.7 : 1,
+
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  boxShadow: 5
+                }
+              }}
+            >
+              <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+                
+                <Typography fontSize="1.8rem">
+                  {getIcon(n.type)}
+                </Typography>
+
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  {!n.read && (
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        bgcolor: "error.main",
+                        borderRadius: "50%"
+                      }}
+                    />
+                  )}
+
+                  <Box>
+                    <Typography
+                      sx={{
+                        fontWeight: n.read ? "normal" : "bold"
+                      }}
+                    >
+                      {n.message}
+                    </Typography>
+
+                    <Typography variant="caption" color="text.secondary">
+                      {n.createdAt ? timeAgo(n.createdAt) : ""}
+                    </Typography>
+                  </Box>
                 </Box>
               </Box>
-            </Box>
 
-            {!n.read && (
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => markRead(n.id)}
-              >
-                Mark Read
-              </Button>
-            )}
-          </Box>
-        ))
-      )}
+              {!n.read && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => markRead(n.id)}
+                  sx={{
+                    borderColor: "primary.main",
+                    color: "primary.main",
+                    "&:hover": {
+                      borderColor: "primary.dark",
+                      backgroundColor: "rgba(90,62,43,0.05)"
+                    }
+                  }}
+                >
+                  Mark Read
+                </Button>
+              )}
+            </Box>
+          ))
+        )}
+      </Box>
     </Box>
   );
 }
