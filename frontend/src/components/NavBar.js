@@ -1,4 +1,4 @@
-import { AppBar, Toolbar, Typography, Button } from "@mui/material";
+import { AppBar, Toolbar, Typography, Button, Badge } from "@mui/material";
 import { Link } from "react-router-dom";
 
 const AUTH_BASE_URL = "http://localhost:3001";
@@ -20,7 +20,13 @@ function NavBar({ unreadCount = 0, isAuthenticated = false }) {
             </Button>
 
             <Button color="inherit" component={Link} to="/notifications">
-                Notifications{unreadCount > 0 ? ` (${unreadCount})` : ""}
+                <Badge
+                color="error"
+                badgeContent={unreadCount}
+                invisible={unreadCount === 0}
+                >
+                    Notifications
+                </Badge>
             </Button>
 
             {isAuthenticated ? (
