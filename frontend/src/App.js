@@ -140,7 +140,17 @@ function App() {
                     mx: "auto"
                   }}
                 >
-                  {listings.map((listing) => (
+                {[...listings]
+                  .sort((a, b) => {
+                    if (a.status === b.status) {
+                      if (a.status === "open") {
+                        return new Date(a.endsAt) - new Date(b.endsAt);
+                      }
+                      return 0;
+                    }
+                    return a.status === "open" ? -1 : 1;
+                  })
+                  .map((listing) => (
                     <ListingCard
                       key={listing.id}
                       listing={listing}
