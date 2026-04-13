@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { closeAuction, getListings, getMe, getNotifications, placeBid } from "./services/api";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import CreateListing from "./pages/CreateListing";
 import ListingCard from "./components/ListingCard";
@@ -35,6 +35,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [bidAmounts, setBidAmounts] = useState({});
+  const location = useLocation();
 
   useEffect(() => {
     (async () => {
@@ -54,6 +55,12 @@ function App() {
       await loadListings();
     })();
   }, []);
+
+  useEffect(() => {
+    if (location.pathname === "/") {
+      loadListings();
+    }
+  }, [location.pathname]); 
 
   const loadListings = async () => {
     const data = await getListings();
