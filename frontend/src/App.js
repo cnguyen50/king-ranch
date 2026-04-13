@@ -92,6 +92,7 @@ function App() {
       <NavBar
         unreadCount={unreadCount}
         isAuthenticated={isAuthenticated}
+        userEmail={me?.email || ""}
       />
 
       <Routes>

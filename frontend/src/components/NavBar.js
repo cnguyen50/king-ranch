@@ -1,4 +1,4 @@
-import { AppBar, Toolbar, Typography, Button, Badge } from "@mui/material";
+import { AppBar, Toolbar, Typography, Button, Badge, Box } from "@mui/material";
 import { Link } from "react-router-dom";
 
 import HomeIcon from "@mui/icons-material/Home";
@@ -7,10 +7,11 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 
 const AUTH_BASE_URL = "http://localhost:3001";
 
-function NavBar({ unreadCount = 0, isAuthenticated = false }) {
+function NavBar({ unreadCount = 0, isAuthenticated = false, userEmail = "" }) {
     return (
         <AppBar position="static">
         <Toolbar>
@@ -58,16 +59,24 @@ function NavBar({ unreadCount = 0, isAuthenticated = false }) {
             </Button>
 
             {isAuthenticated ? (
-                <Button
-                    color="inherit"
-                    startIcon={<LogoutIcon />}
-                    sx={{ ml: 1, "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} }}
-                    onClick={() => {
-                        window.location.href = `${AUTH_BASE_URL}/auth/logout`;
-                    }}
-                >
-                    Logout
-                </Button>
+                <Box sx={{ display: "flex", alignItems: "center", ml: 2 }}>
+                    <AccountCircleIcon sx={{ mr: 1 }} />
+
+                    <Typography sx={{ mr: 2 }}>
+                        {userEmail}
+                    </Typography>
+                    
+                    <Button
+                        color="inherit"
+                        startIcon={<LogoutIcon />}
+                        sx={{ ml: 1, "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} }}
+                        onClick={() => {
+                            window.location.href = `${AUTH_BASE_URL}/auth/logout`;
+                        }}
+                    >
+                        Logout
+                    </Button>
+                </Box>
                 ) : (
                 <>
                 <Button
