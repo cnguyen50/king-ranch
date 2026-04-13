@@ -20,7 +20,7 @@ function ListingCard({
         onPlaceBid,
         onClose,
         formatTimeRemaining
-    }) {
+}) {
     const getUserLabel = (user) => {
         if (!user) return "";
         if (typeof user === "string") return user;
@@ -52,9 +52,15 @@ function ListingCard({
                 borderRadius: 3,
                 overflow: "hidden",
                 transition: "all 0.2s ease",
+                opacity: listing.status === "open" ? 1 : 0.6,
+                filter: listing.status === "open" ? "none" : "grayscale(40%)",
+
                 "&:hover": {
-                    transform: "translateY(-4px)",
-                    boxShadow: 6
+                transform:
+                    listing.status === "open"
+                    ? "translateY(-4px)"
+                    : "none",
+                boxShadow: listing.status === "open" ? 6 : 1
                 }
             }}
         >
