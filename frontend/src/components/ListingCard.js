@@ -67,7 +67,7 @@ function ListingCard({
                     }
                     alt={listing.title}
                     sx={{
-                        height: 260,
+                        height: 350,
                         width: "100%",
                         objectFit: "cover"
                     }}
