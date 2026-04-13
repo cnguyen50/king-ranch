@@ -13,92 +13,129 @@ import {
 } from "@mui/material";
 
 function ListingCard({
-    listing,
-    isAuthenticated,
-    bidAmount,
-    setBidAmount,
-    onPlaceBid,
-    onClose,
-    formatTimeRemaining
-}) {
+        listing,
+        isAuthenticated,
+        bidAmount,
+        setBidAmount,
+        onPlaceBid,
+        onClose,
+        formatTimeRemaining
+    }) {
     const getUserLabel = (user) => {
         if (!user) return "";
         if (typeof user === "string") return user;
         if (typeof user === "object") {
-            return user.displayName || user.email || user.username || user.userId || "";
+            return (
+                user.displayName ||
+                user.email ||
+                user.username ||
+                user.userId ||
+                ""
+            );
         }
         return "";
     };
 
     const timeLeftLabel =
         listing.status === "open"
-            ? formatTimeRemaining(listing.endsAt)
-            : "Closed";
+        ? formatTimeRemaining(listing.endsAt)
+        : "Closed";
 
     return (
         <Card
             sx={{
                 width: "100%",
                 height: "100%",
-                minHeight: 450,
+                minHeight: 500,
                 display: "flex",
                 flexDirection: "column",
-                transition: "0.3s",
-                "&:hover": { transform: "scale(1.02)" }
+                borderRadius: 3,
+                overflow: "hidden",
+                transition: "all 0.2s ease",
+                "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: 6
+                }
             }}
         >
+            <CardActionArea>
+                <CardMedia
+                    component="img"
+                    image={
+                        listing.image ||
+                        "https://via.placeholder.com/400x200"
+                    }
+                    alt={listing.title}
+                    sx={{
+                        height: 260,
+                        width: "100%",
+                        objectFit: "cover"
+                    }}
+                />
+            </CardActionArea>
 
-        <CardActionArea>
-            <CardMedia
-                component="img"
-                image={
-                    listing.image ||
-                    "https://via.placeholder.com/400x200"
-                }
-                alt={listing.title}
-                sx={{
-                    height: 200,
-                    width: "100%",
-                    objectFit: "cover",
-                    borderBottom: "1px solid #eee"
-                }}
-            />
-        </CardActionArea>
+            <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                <CardContent sx={{ pb: 1 }}>
+                <Typography
+                    variant="h6"
+                    sx={{ fontWeight: "bold", mb: 0.5 }}
+                >
+                    {listing.title}
+                </Typography>
 
-        <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-            <CardContent>
-                <Typography variant="h6">{listing.title}</Typography>
-                <Typography variant="h6" sx={{ fontWeight: "bold" }}>Price: ${listing.currentPrice}</Typography>
+                <Typography
+                    sx={{
+                        fontSize: "1.1rem",
+                        fontWeight: "bold",
+                        mb: 1
+                    }}
+                >
+                    Price: ${listing.currentPrice}
+                </Typography>
 
                 <Chip
                     label={listing.status.toUpperCase()}
                     color={listing.status === "open" ? "success" : "error"}
                     variant={listing.status === "open" ? "filled" : "outlined"}
                     size="small"
-                    sx={{ mt: 1 }}
+                    sx={{ mb: 1 }}
                 />
 
                 {(listing.creator || listing.seller) && (
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                    Seller: {getUserLabel(listing.creator) || getUserLabel(listing.seller)}
+                    <Typography variant="body2" sx={{ mt: 0.5 }}>
+                    Seller:{" "}
+                    {getUserLabel(listing.creator) ||
+                        getUserLabel(listing.seller)}
                     </Typography>
                 )}
 
                 {listing.winner && (
                     <Typography variant="body2">
-                    Winner: {getUserLabel(listing.winner)}
+                        Winner: {getUserLabel(listing.winner)}
                     </Typography>
                 )}
 
                 {listing.endsAt && (
-                    <Typography variant="body2" color="text.secondary">
-                    Time Left: {timeLeftLabel}
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 0.5 }}
+                    >
+                        Time Left: {timeLeftLabel}
                     </Typography>
                 )}
-            </CardContent>
+                </CardContent>
 
-            {listing.status === "open" && (
-                <Box sx={{ p: 2 }}>
+                {listing.status === "open" && (
+                <Box
+                    sx={{
+                        px: 2,
+                        pb: 2,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 1.2
+                    }}
+                >
                     <TextField
                         size="small"
                         type="number"
@@ -106,14 +143,22 @@ function ListingCard({
                         fullWidth
                         value={bidAmount ?? ""}
                         onChange={(e) => setBidAmount(e.target.value)}
+                        sx={{
+                            "& .MuiOutlinedInput-root": { borderRadius: 2 }
+                        }}
                     />
 
                     <Button
                         variant="contained"
                         fullWidth
-                        sx={{ mt: 1 }}
                         onClick={onPlaceBid}
                         disabled={!isAuthenticated}
+                        sx={{
+                            py: 1.1,
+                            fontWeight: "bold",
+                            transition: "all 0.2s ease",
+                            "&:hover": { transform: "translateY(-1px)" }
+                        }}
                     >
                         Place Bid
                     </Button>
@@ -121,20 +166,27 @@ function ListingCard({
                     <Button
                         variant="outlined"
                         fullWidth
-                        sx={{ mt: 1 }}
                         onClick={onClose}
                         disabled={!isAuthenticated}
+                        sx={{ borderRadius: 2 }}
                     >
                         Close Auction
                     </Button>
                 </Box>
-            )}
-        </Box>
+                )}
+            </Box>
 
-        <Divider />
-        <Box sx={{ p: 2 }}>
-            <BidList bids={listing.bids} />
-        </Box>
+            <Divider />
+
+            <Box
+                sx={{
+                    p: 2,
+                    maxHeight: 160,
+                    overflowY: "auto"
+                }}
+            >
+                <BidList bids={listing.bids} />
+            </Box>
         </Card>
     );
 }
