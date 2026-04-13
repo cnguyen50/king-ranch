@@ -34,92 +34,95 @@ function NavBar({ unreadCount = 0, isAuthenticated = false, userEmail = "" }) {
                 <HomeIcon fontSize="medium" />
             </Button>
 
-            <Button
-                color="inherit"
-                component={Link}
-                to="/create"
-                sx={{ 
-                    ml: 1,
-                    minWidth: 48,
-                    height: 48,
-                    px: 1,
-                    "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} 
-                }}
-            >
-                <AddCircleIcon fontSize="medium" />
-            </Button>
-
-            <Button
-                color="inherit"
-                component={Link}
-                to="/notifications"
-                sx={{
-                    ml: 1,
-                    minWidth: 48,
-                    height: 48,
-                    px: 1,
-                    "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" }
-                }}
-            >
-                <Badge
-                    color="error"
-                    badgeContent={unreadCount}
-                    invisible={unreadCount === 0}
-                    sx={{ "& .MuiBadge-badge": { fontWeight: "bold" } }}
-                >
-                    <NotificationsIcon fontSize="medium" />
-                </Badge>
-            </Button>
-
-            {isAuthenticated ? (
-                <Box sx={{ display: "flex", alignItems: "center", ml: 2 }}>
-                    
-
-                    <AccountCircleIcon fontSize="medium" sx={{ mr: 0.5 }} />
-                    <Typography sx={{ mr: 2, fontSize: "0.9rem", opacity: 0.85 }}>
-                        {userEmail}
-                    </Typography>
+            {isAuthenticated && (
+                <>
+                    <Button
+                        color="inherit"
+                        component={Link}
+                        to="/create"
+                        sx={{ 
+                            ml: 1,
+                            minWidth: 48,
+                            height: 48,
+                            px: 1,
+                            "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} 
+                        }}
+                    >
+                        <AddCircleIcon fontSize="medium" />
+                    </Button>
 
                     <Button
                         color="inherit"
+                        component={Link}
+                        to="/notifications"
                         sx={{
+                            ml: 1,
                             minWidth: 48,
                             height: 48,
                             px: 1,
                             "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" }
                         }}
-                        onClick={() => {
-                            window.location.href = `${AUTH_BASE_URL}/auth/logout`;
-                        }}
                     >
-                        <LogoutIcon fontSize="medium" />
+                        <Badge
+                            color="error"
+                            badgeContent={unreadCount}
+                            invisible={unreadCount === 0}
+                        >
+                            <NotificationsIcon fontSize="medium" />
+                        </Badge>
                     </Button>
-                </Box>
-                ) : (
-                <>
-                <Button
-                    color="inherit"
-                    startIcon={<LoginIcon />}
-                    sx={{ ml: 1, "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} }}
-                    onClick={() => {
-                        window.location.href = `${AUTH_BASE_URL}/auth/login`;
-                    }}
-                >
-                    Login
-                </Button>
-
-                <Button
-                    color="inherit"
-                    startIcon={<PersonAddIcon />}
-                    sx={{ ml: 1, "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} }}
-                    onClick={() => {
-                        window.location.href = `${AUTH_BASE_URL}/auth/signup`;
-                    }}
-                >
-                    Signup
-                </Button>
-            </>
+                </>
             )}
+
+            <Box sx={{ display: "flex", alignItems: "center", ml: 2 }}>
+                {isAuthenticated ? (
+                    <>
+                        <AccountCircleIcon fontSize="medium" sx={{ mr: 0.5 }} />
+                        <Typography sx={{ mr: 2, fontSize: "0.9rem", opacity: 0.85 }}>
+                            {userEmail}
+                        </Typography>
+
+                        <Button
+                            color="inherit"
+                            sx={{
+                                minWidth: 48,
+                                height: 48,
+                                px: 1,
+                                "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" }
+                            }}
+                            onClick={() => {
+                                window.location.href = `${AUTH_BASE_URL}/auth/logout`;
+                            }}
+                        >
+                            <LogoutIcon fontSize="medium" />
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <Button
+                            color="inherit"
+                            startIcon={<LoginIcon />}
+                            sx={{ ml: 1, "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} }}
+                            onClick={() => {
+                                window.location.href = `${AUTH_BASE_URL}/auth/login`;
+                            }}
+                        >
+                            Login
+                        </Button>
+
+                        <Button
+                            color="inherit"
+                            startIcon={<PersonAddIcon />}
+                            sx={{ ml: 1, "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} }}
+                            onClick={() => {
+                                window.location.href = `${AUTH_BASE_URL}/auth/signup`;
+                            }}
+                        >
+                            Signup
+                        </Button>
+                    </>
+                )}
+            </Box>
         </Toolbar>
         </AppBar>
     );
