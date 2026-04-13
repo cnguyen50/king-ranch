@@ -23,58 +23,76 @@ function NavBar({ unreadCount = 0, isAuthenticated = false, userEmail = "" }) {
                 color="inherit"
                 component={Link}
                 to="/"
-                startIcon={<HomeIcon />}
-                sx={{ ml: 1, "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} }}
+                sx={{ 
+                    ml: 1,
+                    minWidth: 48,
+                    height: 48,
+                    px: 1,
+                    "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} 
+                }}
             >
-                Home
+                <HomeIcon fontSize="medium" />
             </Button>
 
             <Button
                 color="inherit"
                 component={Link}
                 to="/create"
-                startIcon={<AddCircleIcon />}
-                sx={{ ml: 1, "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} }}
+                sx={{ 
+                    ml: 1,
+                    minWidth: 48,
+                    height: 48,
+                    px: 1,
+                    "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} 
+                }}
             >
-                Create Listing
+                <AddCircleIcon fontSize="medium" />
             </Button>
 
             <Button
                 color="inherit"
                 component={Link}
                 to="/notifications"
-                startIcon={
-                    <Badge
-                        color="error"
-                        badgeContent={unreadCount}
-                        invisible={unreadCount === 0}
-                        sx={{"& .MuiBadge-badge": { fontWeight: "bold"}}}
-                    >
-                        <NotificationsIcon />
-                    </Badge>
-                }
-                sx={{ ml: 1, "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} }}
+                sx={{
+                    ml: 1,
+                    minWidth: 48,
+                    height: 48,
+                    px: 1,
+                    "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" }
+                }}
             >
-                Notifications
+                <Badge
+                    color="error"
+                    badgeContent={unreadCount}
+                    invisible={unreadCount === 0}
+                    sx={{ "& .MuiBadge-badge": { fontWeight: "bold" } }}
+                >
+                    <NotificationsIcon fontSize="medium" />
+                </Badge>
             </Button>
 
             {isAuthenticated ? (
                 <Box sx={{ display: "flex", alignItems: "center", ml: 2 }}>
-                    <AccountCircleIcon sx={{ mr: 1 }} />
+                    
 
-                    <Typography sx={{ mr: 2 }}>
+                    <AccountCircleIcon fontSize="medium" sx={{ mr: 0.5 }} />
+                    <Typography sx={{ mr: 2, fontSize: "0.9rem", opacity: 0.85 }}>
                         {userEmail}
                     </Typography>
-                    
+
                     <Button
                         color="inherit"
-                        startIcon={<LogoutIcon />}
-                        sx={{ ml: 1, "&:hover": { backgroundColor: "rgba(255,255,255,0.1)"} }}
+                        sx={{
+                            minWidth: 48,
+                            height: 48,
+                            px: 1,
+                            "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" }
+                        }}
                         onClick={() => {
                             window.location.href = `${AUTH_BASE_URL}/auth/logout`;
                         }}
                     >
-                        Logout
+                        <LogoutIcon fontSize="medium" />
                     </Button>
                 </Box>
                 ) : (
