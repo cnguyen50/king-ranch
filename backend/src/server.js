@@ -6,6 +6,8 @@ const express = require("express");
 const session = require("express-session");
 const { Issuer, generators } = require("openid-client");
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const {
     DynamoDBDocumentClient,
     ScanCommand,
@@ -65,6 +67,7 @@ const AWS_REGION = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION;
 const DDB_LISTINGS_TABLE = process.env.DDB_LISTINGS_TABLE;
 const DDB_BIDS_TABLE = process.env.DDB_BIDS_TABLE;
 const DDB_NOTIFICATIONS_TABLE = process.env.DDB_NOTIFICATIONS_TABLE;
+const S3_BUCKET = process.env.S3_BUCKET;
 
 if (!COGNITO_ISSUER || !COGNITO_CLIENT_ID || !COGNITO_CLIENT_SECRET || !COGNITO_DOMAIN) {
     throw new Error(
@@ -77,6 +80,8 @@ if (!AWS_REGION || !DDB_LISTINGS_TABLE || !DDB_BIDS_TABLE || !DDB_NOTIFICATIONS_
         "Missing required DynamoDB env vars: AWS_REGION, DDB_LISTINGS_TABLE, DDB_BIDS_TABLE, DDB_NOTIFICATIONS_TABLE"
     );
 }
+
+const s3 = S3_BUCKET ? new S3Client({ region: AWS_REGION }) : null;
 
 const ddbDoc = DynamoDBDocumentClient.from(
     new DynamoDBClient({ region: AWS_REGION }),
@@ -109,6 +114,31 @@ app.get("/auth/me", checkAuth, (req, res) => {
         isAuthenticated: req.isAuthenticated,
         user: req.session.userInfo || null
     });
+});
+
+app.post("/uploads/image", requireAuth, async (req, res) => {
+    if (!S3_BUCKET) {
+        return res.status(500).json({ error: "S3_BUCKET env var is required" });
+    }
+
+    const contentType = typeof req.body.contentType === "string" ? req.body.contentType.trim() : "";
+    if (!contentType.startsWith("image/")) {
+        return res.status(400).json({ error: "contentType must be an image/* mime type" });
+    }
+
+    const ext = contentType.split("/")[1] || "bin";
+    const key = `listings/${req.authUser.userId}/${crypto.randomUUID()}.${ext}`;
+
+    const command = new PutObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: key,
+        ContentType: contentType
+    });
+
+    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 60 });
+    const imageUrl = `https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${key}`;
+
+    res.json({ uploadUrl, imageUrl, key });
 });
 
 app.get("/auth/login", async (req, res) => {
@@ -464,7 +494,7 @@ app.post("/listings", requireAuth, async (req, res) => {
         endsAt,
         creator,
         winner: null,
-        image: req.body.image || null
+        image: typeof req.body.imageUrl === "string" ? req.body.imageUrl.trim() : null
     };
 
     await ddbPutListing(newListing);

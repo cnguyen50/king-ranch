@@ -7,12 +7,14 @@ import {
     Paper
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { createListing } from "../services/api";
+import { createImageUpload, createListing } from "../services/api";
 
 function CreateListing() {
     const [title, setTitle] = useState("");
     const [price, setPrice] = useState("");
-    const [image, setImage] = useState("");
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+    const [imageUrl, setImageUrl] = useState("");
 
     const navigate = useNavigate();
 
@@ -23,10 +25,31 @@ function CreateListing() {
         }
 
         try {
+            let finalImageUrl = imageUrl;
+
+            if (imageFile) {
+                const upload = await createImageUpload(imageFile.type);
+
+                const putRes = await fetch(upload.uploadUrl, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": imageFile.type
+                    },
+                    body: imageFile
+                });
+
+                if (!putRes.ok) {
+                    throw new Error(`Image upload failed (${putRes.status})`);
+                }
+
+                finalImageUrl = upload.imageUrl;
+                setImageUrl(finalImageUrl);
+            }
+
             await createListing({
                 title,
                 price: Number(price),
-                image
+                imageUrl: finalImageUrl || null
             });
         } catch (e) {
             alert(e && e.message ? e.message : "Failed to create listing");
@@ -37,14 +60,18 @@ function CreateListing() {
     };
 
     const handleImageUpload = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
+        const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+        setImageFile(file);
 
-        reader.onloadend = () => {
-            setImage(reader.result);
-        };
+        if (imagePreviewUrl) {
+            URL.revokeObjectURL(imagePreviewUrl);
+        }
 
-        if (file) reader.readAsDataURL(file);
+        if (file) {
+            setImagePreviewUrl(URL.createObjectURL(file));
+        } else {
+            setImagePreviewUrl("");
+        }
     };
 
     return (
@@ -81,7 +108,7 @@ function CreateListing() {
                     Create Listing
                 </Typography>
 
-                {image && (
+                {imagePreviewUrl && (
                     <Box
                         sx={{
                             mb: 2,
@@ -91,7 +118,7 @@ function CreateListing() {
                         }}
                     >
                         <img
-                            src={image}
+                            src={imagePreviewUrl}
                             alt="preview"
                             style={{
                                 width: "100%",

@@ -44,6 +44,24 @@ export const getMe = async () => {
     return res.json();
 };
 
+export const createImageUpload = async (contentType) => {
+    const res = await fetchJson(`${BASE_URL}/uploads/image`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ contentType })
+    });
+
+    if (!res.ok) {
+        const msg = await readErrorMessage(res);
+        const prefix = res.status === 401 ? "Unauthorized" : `Error ${res.status}`;
+        throw new Error(`${prefix}: ${msg}`);
+    }
+
+    return res.json();
+};
+
 export const getNotifications = async () => {
     const res = await fetchJson(`${BASE_URL}/notifications`);
     return res.json();
