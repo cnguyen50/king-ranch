@@ -54,6 +54,8 @@ function ListingCard({
                 transition: "all 0.2s ease",
                 opacity: listing.status === "open" ? 1 : 0.6,
                 filter: listing.status === "open" ? "none" : "grayscale(40%)",
+                boxShadow: 3,
+                border: "1px solid rgba(0,0,0,0.05)",
 
                 "&:hover": {
                 transform:
@@ -101,10 +103,22 @@ function ListingCard({
 
                 <Chip
                     label={listing.status.toUpperCase()}
-                    color={listing.status === "open" ? "success" : "error"}
-                    variant={listing.status === "open" ? "filled" : "outlined"}
                     size="small"
-                    sx={{ mb: 1 }}
+                    sx={{
+                        mb: 1,
+                        backgroundColor:
+                            listing.status === "open"
+                                ? "success.main"
+                                : "transparent",
+                        color:
+                            listing.status === "open"
+                                ? "#fff"
+                                : "error.main",
+                        border:
+                            listing.status === "open"
+                                ? "none"
+                                : "1px solid",
+                    }}
                 />
 
                 {(listing.creator || listing.seller) && (

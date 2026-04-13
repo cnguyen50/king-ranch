@@ -6,12 +6,33 @@ import {
   getNotifications,
   placeBid
 } from "./services/api";
+import { ThemeProvider, CssBaseline } from "@mui/material";
 import { Routes, Route, useLocation } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import CreateListing from "./pages/CreateListing";
 import ListingCard from "./components/ListingCard";
 import { Box, Typography, Button } from "@mui/material";
 import Notifications from "./pages/Notifications";
+import { createTheme } from "@mui/material/styles";
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: "#5A3E2B",
+      dark: "#4A3324",
+      light: "#7A5A3A"
+    },
+    secondary: {
+      main: "#C19A6B"
+    },
+    background: {
+      default: "#F5E6D3"
+    },
+    success: {
+      main: "#2E7D32"
+    }
+  }
+});
 
 function formatTimeRemaining(endsAt) {
   if (!endsAt) return "";
@@ -88,108 +109,97 @@ function App() {
   };
 
   return (
-    <>
-      <NavBar
-        unreadCount={unreadCount}
-        isAuthenticated={isAuthenticated}
-        userEmail={me?.email || ""}
-      />
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
 
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <Box sx={{ backgroundColor: "#f5f5f5", minHeight: "100vh" }}>
-              <Box sx={{ py: 3, px: { xs: 2, sm: 3, md: 4 } }}>
-                <Typography
-                  variant="h4"
-                  sx={{ fontWeight: "bold", mb: 2 }}
-                >
-                  King Ranch Auctions
-                </Typography>
+      <>
+        <NavBar
+          unreadCount={unreadCount}
+          isAuthenticated={isAuthenticated}
+          userEmail={me?.email || ""}
+        />
 
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    {isAuthenticated
-                      ? `Signed in as ${
-                          me?.email ||
-                          me?.username ||
-                          me?.sub ||
-                          "user"
-                        }`
-                      : "Not signed in"}
-                  </Typography>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Box sx={{ backgroundColor: "background.default", minHeight: "100vh" }}>
+                <Box sx={{ py: 3, px: { xs: 2, sm: 3, md: 4 } }}>
+              <Typography
+                variant="h4"
+                sx={{
+                  textAlign: "center",
+                  fontWeight: "bold",
+                  color: "primary.main",
+                  mb: 4
+                }}
+              >
+                Auction List
+              </Typography>
 
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={loadListings}
+
+                  <Box
+                    sx={{
+                      mt: 4,
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(340px, 1fr))",
+                      gap: 3,
+                      width: "100%",
+                      maxWidth: "1700px",
+                      mx: "auto"
+                    }}
                   >
-                    Refresh
-                  </Button>
-                </Box>
-
-                <Box
-                  sx={{
-                    mt: 4,
-                    display: "grid",
-                    gridTemplateColumns:
-                      "repeat(auto-fill, minmax(340px, 1fr))",
-                    gap: 3,
-                    width: "100%",
-                    maxWidth: "1700px",
-                    mx: "auto"
-                  }}
-                >
-                {[...listings]
-                  .sort((a, b) => {
-                    if (a.status === b.status) {
-                      if (a.status === "open") {
-                        return new Date(a.endsAt) - new Date(b.endsAt);
+                  {[...listings]
+                    .sort((a, b) => {
+                      if (a.status === b.status) {
+                        if (a.status === "open") {
+                          return new Date(a.endsAt) - new Date(b.endsAt);
+                        }
+                        return 0;
                       }
-                      return 0;
-                    }
-                    return a.status === "open" ? -1 : 1;
-                  })
-                  .map((listing) => (
-                    <ListingCard
-                      key={listing.id}
-                      listing={listing}
-                      isAuthenticated={isAuthenticated}
-                      bidAmount={bidAmounts[listing.id]}
-                      setBidAmount={(value) =>
-                        setBidAmounts((prev) => ({
-                          ...prev,
-                          [listing.id]: value
-                        }))
-                      }
-                      onPlaceBid={() =>
-                        handlePlaceBid(listing.id)
-                      }
-                      onClose={() =>
-                        handleClose(listing.id)
-                      }
-                      formatTimeRemaining={formatTimeRemaining}
-                    />
-                  ))}
+                      return a.status === "open" ? -1 : 1;
+                    })
+                    .map((listing) => (
+                      <ListingCard
+                        key={listing.id}
+                        listing={listing}
+                        isAuthenticated={isAuthenticated}
+                        bidAmount={bidAmounts[listing.id]}
+                        setBidAmount={(value) =>
+                          setBidAmounts((prev) => ({
+                            ...prev,
+                            [listing.id]: value
+                          }))
+                        }
+                        onPlaceBid={() =>
+                          handlePlaceBid(listing.id)
+                        }
+                        onClose={() =>
+                          handleClose(listing.id)
+                        }
+                        formatTimeRemaining={formatTimeRemaining}
+                      />
+                    ))}
+                  </Box>
                 </Box>
               </Box>
-            </Box>
-          }
-        />
+            }
+          />
 
-        <Route path="/create" element={<CreateListing />} />
+          <Route path="/create" element={<CreateListing />} />
 
-        <Route
-          path="/notifications"
-          element={
-            <Notifications
-              onNotificationsUpdate={setUnreadCount}
-            />
-          }
-        />
-      </Routes>
-    </>
+          <Route
+            path="/notifications"
+            element={
+              <Notifications
+                onNotificationsUpdate={setUnreadCount}
+              />
+            }
+          />
+        </Routes>
+      </>
+    </ThemeProvider>
   );
 }
 
